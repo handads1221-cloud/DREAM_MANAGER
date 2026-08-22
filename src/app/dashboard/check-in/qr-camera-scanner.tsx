@@ -27,10 +27,16 @@ export function QrCameraScanner() {
       scannerRef.current = new QrScanner(videoRef.current, (result) => {
         if (handledRef.current) return;
         try {
-          const scanned = new URL(result.data, window.location.origin);
-          const token = scanned.searchParams.get('token');
-          if (scanned.origin !== window.location.origin || scanned.pathname !== '/dashboard/check-in' || !token) {
-            setStatus('드림어린이부 출석 QR이 아닙니다. 안내 화면의 QR을 촬영해 주세요.');
+          const rawValue = result.data.trim();
+          let token = rawValue;
+          try {
+            const scanned = new URL(rawValue);
+            token = scanned.searchParams.get('token') ?? '';
+          } catch {
+            // 날짜 기반 QR에는 코드 문자열 자체가 저장됩니다.
+          }
+          if (!/^SH-DRC-[0-9A-F]{6}$/i.test(token)) {
+            setStatus('드림어린이부 당일 출석 QR이 아닙니다. 안내 화면의 QR을 촬영해 주세요.');
             return;
           }
           handledRef.current = true;

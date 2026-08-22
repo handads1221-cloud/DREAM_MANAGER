@@ -12,12 +12,8 @@ export async function saveAttendance(formData: FormData) {
   revalidatePath('/dashboard/attendance');
 }
 
-export async function refreshQr(formData: FormData) {
-  const date = String(formData.get('service_date') ?? ''); const supabase = await createClient(); await supabase.rpc('admin_refresh_attendance_qr', { target_date: date }); revalidatePath('/dashboard/attendance/qr');
-}
-
 export async function submitQr(formData: FormData) {
   const token = String(formData.get('token') ?? ''); const supabase = await createClient(); const { data, error } = await supabase.rpc('submit_qr_attendance', { raw_token: token });
-  const message = error ? '유효하지 않거나 만료된 QR입니다.' : String(data ?? '출석이 완료되었습니다.');
+  const message = error ? '오늘 날짜의 출석 QR이 아닙니다. 관리자 화면의 당일 QR을 다시 촬영해 주세요.' : String(data ?? '출석이 완료되었습니다.');
   redirect(`/dashboard/check-in?message=${encodeURIComponent(message)}&success=${error ? '0' : '1'}`);
 }
