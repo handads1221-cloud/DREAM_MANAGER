@@ -1,7 +1,6 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 
@@ -32,10 +31,13 @@ export async function approveRegistration(formData: FormData) {
 
   const { data: registration } = await admin.supabase.from('registration_requests').select('email').eq('user_id', userId).maybeSingle();
   const { error } = await admin.supabase.from('profiles').upsert({ id: userId, email: registration?.email ?? null, role, full_name: request.full_name, phone: request.phone, address: request.address, note: request.note, is_active: true }, { onConflict: 'id' });
-  if (error) return;
+  if (error) accountsRedirect('error', `계정 프로필을 승인하지 못했습니다. (${error.message})`);
+  const { error: confirmError } = await admin.supabase.rpc('admin_confirm_user_email', { target_user_id: userId });
+  if (confirmError) accountsRedirect('error', `이메일 인증을 완료하지 못했습니다. (${confirmError.message})`);
   await admin.supabase.from('registration_requests').update({ status: 'approved', reviewed_by: admin.userId, reviewed_at: new Date().toISOString() }).eq('user_id', userId);
   revalidatePath('/dashboard');
   revalidatePath('/dashboard/accounts');
+  accountsRedirect('message', '가입 승인과 이메일 인증을 완료했습니다. 이제 가입한 비밀번호로 로그인할 수 있습니다.');
 }
 
 export async function rejectRegistration(formData: FormData) {
@@ -62,18 +64,21 @@ export async function updateAccountRole(formData: FormData) {
   accountsRedirect('message', '계정 권한을 변경했습니다.');
 }
 
-export async function sendAccountPasswordReset(formData: FormData) {
+export async function setAccountPassword(formData: FormData) {
   const admin = await requireAdmin();
   if (!admin) accountsRedirect('error', '관리자 권한을 확인할 수 없습니다.');
   const userId = String(formData.get('user_id') ?? '');
-  const { data: profile } = await admin.supabase.from('profiles').select('email').eq('id', userId).maybeSingle();
-  if (!profile?.email) accountsRedirect('error', '재설정 메일을 받을 이메일을 찾지 못했습니다.');
+  const password = String(formData.get('new_password') ?? '');
+  const passwordConfirm = String(formData.get('new_password_confirm') ?? '');
+  if (!userId) accountsRedirect('error', '비밀번호를 변경할 계정을 확인할 수 없습니다.');
+  if (userId === admin.userId) accountsRedirect('error', '현재 로그인한 관리자 자신의 비밀번호는 로그인 화면의 비밀번호 변경 절차를 이용해 주세요.');
+  if (password.length < 8) accountsRedirect('error', '새 비밀번호는 문자 종류와 관계없이 8자 이상 입력해 주세요.');
+  if (new TextEncoder().encode(password).length > 72) accountsRedirect('error', '새 비밀번호가 너무 깁니다. 한글을 포함하면 더 짧게 입력해 주세요.');
+  if (password !== passwordConfirm) accountsRedirect('error', '새 비밀번호 확인이 일치하지 않습니다.');
 
-  const requestHeaders = await headers();
-  const origin = requestHeaders.get('origin') ?? 'https://dream-manager.vercel.app';
-  const { error } = await admin.supabase.auth.resetPasswordForEmail(profile.email, { redirectTo: `${origin}/auth/confirm?next=/reset-password` });
-  if (error) accountsRedirect('error', `비밀번호 재설정 메일을 보내지 못했습니다. (${error.message})`);
-  accountsRedirect('message', `${profile.email} 주소로 비밀번호 재설정 메일을 보냈습니다.`);
+  const { error } = await admin.supabase.rpc('admin_set_user_password', { target_user_id: userId, new_password: password });
+  if (error) accountsRedirect('error', `비밀번호를 변경하지 못했습니다. (${error.message})`);
+  accountsRedirect('message', '새 비밀번호를 적용하고 해당 계정의 기존 로그인 세션을 종료했습니다.');
 }
 
 export async function withdrawAccount(formData: FormData) {
