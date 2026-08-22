@@ -219,6 +219,7 @@ button { color: inherit; }
 .live-welcome a { margin-top: 20px; color: #8ee2c3; font-weight: 800; text-decoration: none; }
 
 .student-page { min-height: 100vh; background: var(--paper); }
+.student-home-brand { color: inherit; text-decoration: none; }
 .student-page-header { min-height: 74px; padding: 10px clamp(18px, 4vw, 54px); display: flex; align-items: center; justify-content: space-between; gap: 20px; border-bottom: 1px solid var(--line); background: #fff; }
 .student-brand { display: flex; align-items: center; gap: 14px; color: var(--ink); text-decoration: none; font-weight: 850; }
 .student-brand img { width: 132px; height: 48px; object-fit: contain; }
@@ -226,7 +227,9 @@ button { color: inherit; }
 .student-page-header > div { display: flex; align-items: center; gap: 15px; font-size: 12px; }
 .student-page-header > div span { color: var(--muted); }
 .student-page-header > div a { padding: 9px 12px; border: 1px solid var(--line); border-radius: 10px; color: var(--ink); text-decoration: none; font-weight: 750; }
-.student-page-content { width: min(1180px, calc(100% - 36px)); margin: 0 auto; padding: 42px 0 80px; }
+.student-page-content { width: auto; max-width: 100%; margin: 0; padding: 42px 48px 80px; }
+.back-home-button { width: fit-content; margin-bottom: 19px; display: inline-flex; align-items: center; gap: 7px; padding: 9px 13px; border: 1px solid var(--line); border-radius: 11px; background: #fff; color: #5f6b66; text-decoration: none; font-size: 11px; font-weight: 800; }
+.back-home-button:hover { border-color: #b9ded0; color: #087b57; }
 .student-page-intro { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; margin-bottom: 25px; }
 .student-page-intro p { margin: 0 0 6px; color: var(--mint); font-size: 10px; font-weight: 900; letter-spacing: .12em; }
 .student-page-intro h1 { margin: 0; font-size: clamp(30px, 4vw, 43px); letter-spacing: -.055em; }
@@ -282,6 +285,8 @@ button { color: inherit; }
 @media (max-width: 800px) {
   .student-grid { grid-template-columns: repeat(2, 1fr); }
   .student-page-header > div span { display: none; }
+  .student-page-content { padding: 28px 18px 110px; }
+  .student-mobile-nav .student-mobile-main { justify-self: center; width: 54px; height: 54px; display: grid; place-items: center; border-radius: 18px; background: var(--mint); color: #fff; font-size: 23px; box-shadow: 0 8px 20px rgba(22,183,131,.28); transform: translateY(-14px); }
 }
 @media (max-width: 560px) {
   .student-page-header { min-height: 64px; }
