@@ -49,9 +49,12 @@ export default async function DashboardPage() {
         <span>안전하게 로그인되었습니다</span>
         <h2>{role} 계정에 맞는 기능을 준비 중입니다.</h2>
         <p>{profile.grade ? `${profile.grade}학년 ${profile.class_name ?? ''}` : '드림 어린이부'} · 실제 데이터는 Supabase 권한에 따라 표시됩니다.</p>
-        <Link href="/">전체 기능 미리보기 보기 →</Link>
+        {profile.role === 'admin' ? (
+          <Link href="/dashboard/students">학생명단관리 열기 →</Link>
+        ) : (
+          <Link href="/">전체 기능 미리보기 보기 →</Link>
+        )}
       </section>
     </main>
   );
 }
-

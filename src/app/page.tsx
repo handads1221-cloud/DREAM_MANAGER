@@ -37,7 +37,7 @@ const roleData: Record<Role, {
       { icon: '⚙', label: '계정 관리', tone: 'pink' },
     ],
     features: [
-      { eyebrow: 'STUDENTS', title: '1–6학년 명단 관리', copy: '신규 학생을 등록하고 학년·반을 관리하며 새 학기에 전체 학년을 일괄 승급해요.', meta: '학생 50명 관리 →' },
+      { eyebrow: 'STUDENTS', title: '학생명단관리', copy: '1~6학년 학생 명단과 상세정보를 확인하고 학년·반·연락처 등을 관리해요.', meta: '학생 55명 관리 →' },
       { eyebrow: 'SUNDAY QR', title: '이번 주 출석 QR', copy: '매주 일요일 새 QR을 생성하고 예배 안내문과 함께 큰 화면에 표시해요.', meta: 'QR 화면 열기 →' },
       { eyebrow: 'ACCOUNTS', title: '계정·가족 연결 관리', copy: '부모·학생·선생님·관리자 권한, 연락처, 주소와 부모–자녀 연결을 관리해요.', meta: '계정 87개 관리 →' },
     ],
@@ -155,12 +155,18 @@ export default function Home() {
 
           <section className="feature-grid" aria-label={`${role} 주요 기능`}>
             {current.features.map((feature) => (
-              <button key={feature.title} className="feature-card" onClick={() => setModal(feature.title)}>
+              role === '관리자' && feature.title === '학생명단관리' ? (
+              <Link key={feature.title} className="feature-card" href="/dashboard/students">
                 <span>{feature.eyebrow}</span>
                 <h3>{feature.title}</h3>
                 <p>{feature.copy}</p>
                 <b>{feature.meta}</b>
+              </Link>
+              ) : (
+              <button key={feature.title} className="feature-card" onClick={() => setModal(feature.title)}>
+                <span>{feature.eyebrow}</span><h3>{feature.title}</h3><p>{feature.copy}</p><b>{feature.meta}</b>
               </button>
+              )
             ))}
           </section>
 
