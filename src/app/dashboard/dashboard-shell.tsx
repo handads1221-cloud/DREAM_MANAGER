@@ -6,10 +6,10 @@ import { signOut } from './actions';
 export type AppRole = 'admin' | 'teacher' | 'parent' | 'student';
 const roleLabel: Record<AppRole, string> = { admin: '관리자', teacher: '선생님', parent: '부모님', student: '학생' };
 const menus: Record<AppRole, { icon: string; label: string; href: string }[]> = {
-  admin: [{ icon: '⌂', label: '홈', href: '/dashboard' }, { icon: '♙', label: '학생명단관리', href: '/dashboard/students' }, { icon: '◎', label: '가입·계정관리', href: '/dashboard/accounts' }, { icon: '✓', label: '출석관리', href: '/dashboard#attendance' }, { icon: '◆', label: '드림보석', href: '/dashboard#points' }, { icon: '▤', label: '공지·투표', href: '/dashboard#notices' }],
-  teacher: [{ icon: '⌂', label: '홈', href: '/dashboard' }, { icon: '♙', label: '담당 학생', href: '/dashboard#students' }, { icon: '✓', label: '출석등록', href: '/dashboard#attendance' }, { icon: '◆', label: '보석 지급', href: '/dashboard#points' }, { icon: '☎', label: '연락처', href: '/dashboard#contacts' }],
+  admin: [{ icon: '⌂', label: '홈', href: '/dashboard' }, { icon: '♙', label: '학생명단관리', href: '/dashboard/students' }, { icon: '◎', label: '계정·가족연결', href: '/dashboard/relationships' }, { icon: '✓', label: '출석관리', href: '/dashboard/attendance' }, { icon: '◆', label: '드림보석', href: '/dashboard/points' }, { icon: '▤', label: '가입승인', href: '/dashboard/accounts' }],
+  teacher: [{ icon: '⌂', label: '홈', href: '/dashboard' }, { icon: '♙', label: '담당 학생', href: '/dashboard/attendance' }, { icon: '✓', label: '출석등록', href: '/dashboard/attendance' }, { icon: '◆', label: '보석 지급', href: '/dashboard/points' }, { icon: '☎', label: '연락처', href: '/dashboard#contacts' }],
   parent: [{ icon: '⌂', label: '홈', href: '/dashboard' }, { icon: '♥', label: '우리아이', href: '/dashboard#children' }, { icon: '▤', label: '공지사항', href: '/dashboard#notices' }, { icon: '☎', label: '선생님 정보', href: '/dashboard#teacher' }, { icon: '◌', label: '문의하기', href: '/dashboard#inquiry' }],
-  student: [{ icon: '⌂', label: '홈', href: '/dashboard' }, { icon: '▦', label: 'QR 출석', href: '/dashboard#qr' }, { icon: '✓', label: '내 출석', href: '/dashboard#attendance' }, { icon: '◆', label: '내 보석', href: '/dashboard#points' }, { icon: '▤', label: '공지사항', href: '/dashboard#notices' }],
+  student: [{ icon: '⌂', label: '홈', href: '/dashboard' }, { icon: '▦', label: 'QR 출석', href: '/dashboard/check-in' }, { icon: '✓', label: '내 출석', href: '/dashboard#attendance' }, { icon: '◆', label: '내 보석', href: '/dashboard#points' }, { icon: '▤', label: '공지사항', href: '/dashboard#notices' }],
 };
 
 export function DashboardShell({ profile, activeHref = '/dashboard', children }: { profile: { full_name: string; role: AppRole }; activeHref?: string; children: ReactNode }) {

@@ -14,6 +14,7 @@ create table public.registration_requests (
 
 create index registration_requests_status_idx
   on public.registration_requests(status, requested_at desc);
+create index registration_requests_reviewed_by_idx on public.registration_requests(reviewed_by);
 
 create trigger registration_requests_touch
 before update on public.registration_requests
