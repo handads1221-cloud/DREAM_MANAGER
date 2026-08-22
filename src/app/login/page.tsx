@@ -23,12 +23,12 @@ export default async function LoginPage({ searchParams }: PageProps<'/login'>) {
           <Link href="/" className="auth-logo"><Image src="/church-logo.png" alt="청주신흥교회" width={174} height={64} /></Link>
           <p className="eyebrow">DREAM MANAGER</p>
           <h2>반가워요!</h2>
-          <p className="auth-description">등록된 아이디 또는 이메일과 비밀번호로 로그인해 주세요.</p>
+          <p className="auth-description">가입한 이메일과 비밀번호로 로그인해 주세요.</p>
           {error && <p className="form-alert error">{error}</p>}
           {message && <p className="form-alert success">{message}</p>}
           <form action={signIn} className="auth-form">
-            <label htmlFor="loginId">아이디 또는 이메일</label>
-            <input id="loginId" name="loginId" type="text" autoComplete="username" placeholder="DREAM_ADMIN" required />
+            <label htmlFor="loginId">이메일</label>
+            <input id="loginId" name="loginId" type="text" autoComplete="username" placeholder="example@email.com" required />
             <label htmlFor="password">비밀번호</label>
             <input id="password" name="password" type="password" autoComplete="current-password" placeholder="비밀번호를 입력하세요" required />
             <button type="submit">로그인</button>
@@ -37,7 +37,8 @@ export default async function LoginPage({ searchParams }: PageProps<'/login'>) {
             <input name="email" type="email" aria-label="비밀번호를 재설정할 이메일" placeholder="재설정할 이메일" required />
             <button type="submit">비밀번호 재설정</button>
           </form>
-          <small className="auth-help">계정이 없다면 어린이부 관리자에게 등록을 요청해 주세요.</small>
+          <Link href="/signup" className="signup-link-button">처음이신가요? 가입 신청하기</Link>
+          <small className="auth-help">가입 후 이메일 인증과 관리자 승인이 완료되면 계정별 홈을 이용할 수 있습니다.</small>
         </div>
       </section>
     </main>
