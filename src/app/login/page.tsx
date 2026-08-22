@@ -1,0 +1,46 @@
+import Image from 'next/image';
+import Link from 'next/link';
+import { signIn, sendResetLink } from './actions';
+
+export default async function LoginPage({ searchParams }: PageProps<'/login'>) {
+  const params = await searchParams;
+  const error = typeof params.error === 'string' ? params.error : null;
+  const message = typeof params.message === 'string' ? params.message : null;
+
+  return (
+    <main className="auth-page">
+      <section className="auth-visual">
+        <Image src="/dream-group.jpg" alt="드림어린이부 단체사진" fill sizes="(max-width: 820px) 100vw, 55vw" priority />
+        <div className="auth-overlay" />
+        <div className="auth-visual-copy">
+          <span>청주신흥교회 드림 어린이부</span>
+          <h1>사랑 안에서<br />꿈이 자라요</h1>
+          <p>출석과 드림보석, 우리 아이의 소식을 안전하게 만나보세요.</p>
+        </div>
+      </section>
+      <section className="auth-form-wrap">
+        <div className="auth-card">
+          <Link href="/" className="auth-logo"><Image src="/church-logo.png" alt="청주신흥교회" width={174} height={64} /></Link>
+          <p className="eyebrow">DREAM MANAGER</p>
+          <h2>반가워요!</h2>
+          <p className="auth-description">등록된 이메일과 비밀번호로 로그인해 주세요.</p>
+          {error && <p className="form-alert error">{error}</p>}
+          {message && <p className="form-alert success">{message}</p>}
+          <form action={signIn} className="auth-form">
+            <label htmlFor="email">이메일</label>
+            <input id="email" name="email" type="email" autoComplete="email" placeholder="name@example.com" required />
+            <label htmlFor="password">비밀번호</label>
+            <input id="password" name="password" type="password" autoComplete="current-password" placeholder="비밀번호를 입력하세요" required />
+            <button type="submit">로그인</button>
+          </form>
+          <form action={sendResetLink} className="reset-form">
+            <input name="email" type="email" aria-label="비밀번호를 재설정할 이메일" placeholder="재설정할 이메일" required />
+            <button type="submit">비밀번호 재설정</button>
+          </form>
+          <small className="auth-help">계정이 없다면 어린이부 관리자에게 등록을 요청해 주세요.</small>
+        </div>
+      </section>
+    </main>
+  );
+}
+
