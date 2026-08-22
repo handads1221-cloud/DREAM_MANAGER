@@ -23,12 +23,12 @@ export default async function LoginPage({ searchParams }: PageProps<'/login'>) {
           <Link href="/" className="auth-logo"><Image src="/church-logo.png" alt="청주신흥교회" width={174} height={64} /></Link>
           <p className="eyebrow">DREAM MANAGER</p>
           <h2>반가워요!</h2>
-          <p className="auth-description">등록된 이메일과 비밀번호로 로그인해 주세요.</p>
+          <p className="auth-description">등록된 아이디 또는 이메일과 비밀번호로 로그인해 주세요.</p>
           {error && <p className="form-alert error">{error}</p>}
           {message && <p className="form-alert success">{message}</p>}
           <form action={signIn} className="auth-form">
-            <label htmlFor="email">이메일</label>
-            <input id="email" name="email" type="email" autoComplete="email" placeholder="name@example.com" required />
+            <label htmlFor="loginId">아이디 또는 이메일</label>
+            <input id="loginId" name="loginId" type="text" autoComplete="username" placeholder="DREAM_ADMIN" required />
             <label htmlFor="password">비밀번호</label>
             <input id="password" name="password" type="password" autoComplete="current-password" placeholder="비밀번호를 입력하세요" required />
             <button type="submit">로그인</button>
@@ -43,4 +43,3 @@ export default async function LoginPage({ searchParams }: PageProps<'/login'>) {
     </main>
   );
 }
-

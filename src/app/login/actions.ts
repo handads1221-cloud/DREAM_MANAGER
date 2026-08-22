@@ -4,7 +4,10 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 
 export async function signIn(formData: FormData) {
-  const email = String(formData.get('email') ?? '').trim();
+  const loginId = String(formData.get('loginId') ?? '').trim();
+  const email = loginId.includes('@')
+    ? loginId.toLowerCase()
+    : `${loginId.toLowerCase()}@dream-manager.local`;
   const password = String(formData.get('password') ?? '');
   const supabase = await createClient();
   const { error } = await supabase.auth.signInWithPassword({ email, password });
@@ -19,4 +22,3 @@ export async function sendResetLink(formData: FormData) {
   await supabase.auth.resetPasswordForEmail(email);
   redirect(`/login?message=${encodeURIComponent('비밀번호 재설정 메일을 확인해 주세요.')}`);
 }
-
