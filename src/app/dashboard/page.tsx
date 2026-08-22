@@ -16,11 +16,12 @@ export default async function DashboardPage() {
   const { data, error } = await supabase.auth.getClaims();
   if (error || !data?.claims?.sub) redirect('/login');
   const userId = data.claims.sub;
-  const { data: profile } = await supabase.from('profiles').select('full_name, role, grade, class_name, is_active').eq('id', userId).maybeSingle();
+  const { data: profile } = await supabase.from('profiles').select('full_name, role, grade, class_name, is_active, account_status').eq('id', userId).maybeSingle();
 
   if (!profile || !profile.is_active) {
     const { data: request } = await supabase.from('registration_requests').select('full_name, status').eq('user_id', userId).maybeSingle();
-    return <main className="pending-account-page"><section><span className="modal-icon">✦</span><p className="eyebrow">ACCOUNT REVIEW</p><h1>{request?.full_name ?? '가입자'}님의 가입 신청을 확인 중입니다</h1><p>{request?.status === 'rejected' ? '가입 신청이 반려되었습니다. 관리자에게 문의해 주세요.' : '이메일 인증은 완료되었습니다. 관리자가 계정의 역할을 승인하면 해당 홈 화면이 자동으로 열립니다.'}</p><div className="pending-actions"><form action={signOut}><button type="submit">로그아웃</button></form></div></section></main>;
+    const withdrawn = profile?.account_status === 'withdrawn';
+    return <main className="pending-account-page"><section><span className="modal-icon">✦</span><p className="eyebrow">{withdrawn ? 'ACCOUNT WITHDRAWN' : 'ACCOUNT REVIEW'}</p><h1>{withdrawn ? '탈퇴 처리된 계정입니다' : `${request?.full_name ?? '가입자'}님의 가입 신청을 확인 중입니다`}</h1><p>{withdrawn ? '로그인이 차단된 계정입니다. 다시 이용하려면 관리자에게 계정 복구를 요청해 주세요.' : request?.status === 'rejected' ? '가입 신청이 반려되었습니다. 관리자에게 문의해 주세요.' : '이메일 인증은 완료되었습니다. 관리자가 계정의 역할을 승인하면 해당 홈 화면이 자동으로 열립니다.'}</p><div className="pending-actions"><form action={signOut}><button type="submit">로그아웃</button></form></div></section></main>;
   }
 
   const role = profile.role as AppRole;
