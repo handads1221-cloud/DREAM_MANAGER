@@ -20,7 +20,6 @@ export default async function LoginPage({ searchParams }: PageProps<'/login'>) {
       </section>
       <section className="auth-form-wrap">
         <div className="auth-card">
-          <Link href="/" className="auth-logo"><Image src="/church-logo.png" alt="청주신흥교회" width={174} height={64} /></Link>
           <p className="eyebrow">DREAM MANAGER</p>
           <h2>반가워요!</h2>
           <p className="auth-description">가입한 이메일과 비밀번호로 로그인해 주세요.</p>

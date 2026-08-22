@@ -19,7 +19,6 @@ export default async function SignupPage({ searchParams }: PageProps<'/signup'>)
       </section>
       <section className="auth-form-wrap signup-form-wrap">
         <div className="auth-card signup-card">
-          <Link href="/login" className="auth-logo"><Image src="/church-logo.png" alt="청주신흥교회" width={174} height={64} /></Link>
           <p className="eyebrow">CREATE ACCOUNT</p>
           <h2>가입 신청</h2>
           <p className="auth-description">이메일·이름·비밀번호만 입력해도 신청할 수 있습니다. 나머지는 나중에 추가할 수 있어요.</p>

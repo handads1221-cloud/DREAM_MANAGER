@@ -1,4 +1,3 @@
-import Image from 'next/image';
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { signOut } from './actions';
@@ -16,7 +15,7 @@ export function DashboardShell({ profile, activeHref = '/dashboard', children }:
   const items = menus[profile.role];
   return <main className="site-shell operation-shell">
     <header className="topbar">
-      <Link href="/dashboard" className="brand student-home-brand" aria-label="내 홈으로"><Image src="/church-logo.png" alt="청주신흥교회" className="church-logo" width={174} height={64} priority /><span className="brand-divider" /><div><strong>드림 어린이부</strong><small>{roleLabel[profile.role]} 운영 홈</small></div></Link>
+      <Link href="/dashboard" className="brand student-home-brand" aria-label="내 홈으로"><span className="text-brand-mark">†</span><div><small>청주신흥교회</small><strong>드림 어린이부</strong><small>{roleLabel[profile.role]} 운영 홈</small></div></Link>
       <div className="operation-profile"><Link href="/dashboard" className="profile-button"><span className="avatar">{profile.full_name.slice(0, 1)}</span><span className="profile-copy"><b>{profile.full_name}</b><small>{roleLabel[profile.role]} 계정</small></span></Link><form action={signOut}><button type="submit">로그아웃</button></form></div>
     </header>
     <div className="layout"><aside className="sidebar" aria-label={`${roleLabel[profile.role]} 메뉴`}><nav>{items.map((item) => <Link key={item.label} className={activeHref === item.href ? 'active' : ''} href={item.href}><span>{item.icon}</span>{item.label}</Link>)}</nav><div className="sunday-card"><span>로그인 계정</span><strong>{profile.full_name} {roleLabel[profile.role]}</strong><small>계정 권한에 허용된 정보만 안전하게 표시됩니다.</small></div></aside><section className="content operation-content">{children}</section></div>

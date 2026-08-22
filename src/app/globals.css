@@ -274,6 +274,7 @@ button { color: inherit; }
 
 .student-page { min-height: 100vh; background: var(--paper); }
 .student-home-brand { color: inherit; text-decoration: none; }
+.text-brand-mark { width: 43px; height: 43px; display: grid; place-items: center; border-radius: 14px; background: var(--mint-soft); color: var(--mint); font-size: 25px; font-weight: 900; }
 .student-page-header { min-height: 74px; padding: 10px clamp(18px, 4vw, 54px); display: flex; align-items: center; justify-content: space-between; gap: 20px; border-bottom: 1px solid var(--line); background: #fff; }
 .student-brand { display: flex; align-items: center; gap: 14px; color: var(--ink); text-decoration: none; font-weight: 850; }
 .student-brand img { width: 132px; height: 48px; object-fit: contain; }
