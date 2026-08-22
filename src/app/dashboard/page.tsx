@@ -54,10 +54,10 @@ export default async function DashboardPage() {
     <div className="operation-welcome"><div><p>{copy.eyebrow}</p><h1>{profile.full_name}님, 반가워요</h1><span>{copy.description}</span></div><div className={`role-home-badge ${role}`}>{copy.title}</div></div>
     <section className="operation-stat-grid">{stats.map((stat) => <Link key={stat.label} href={stat.href} className={`operation-stat ${stat.tone}`}><span>{stat.label}</span><strong>{stat.value}</strong><small>자세히 보기 →</small></Link>)}</section>
     <section className="role-home-panel"><div><p className="eyebrow">QUICK START</p><h2>{copy.title}</h2><span>현재 계정 권한에 맞는 기능만 표시됩니다.</span></div><div className="role-quick-links">
-      {role === 'admin' && <><Link href="/dashboard/accounts">가입 승인</Link><Link href="/dashboard/relationships">계정·가족·담당 연결</Link><Link href="/dashboard/students">학생명단관리</Link><Link href="/dashboard/attendance">출석·QR 관리</Link><Link href="/dashboard/points">드림보석 관리</Link></>}
-      {role === 'teacher' && <><Link href="/dashboard/attendance">대리 출석등록</Link><Link href="/dashboard/points">드림보석 지급</Link><Link href="#contacts">학생·부모 연락처</Link></>}
-      {role === 'parent' && <><Link href="#children">우리아이 정보</Link><Link href="#notices">공지사항</Link><Link href="#inquiry">관리자 문의</Link></>}
-      {role === 'student' && <><Link href="/dashboard/check-in">QR 출석</Link><Link href="#attendance">내 출석현황</Link><Link href="#points">내 보석</Link></>}
+      {role === 'admin' && <><Link href="/dashboard/accounts">가입 승인</Link><Link href="/dashboard/relationships">계정·가족·담당 연결</Link><Link href="/dashboard/students">학생명단관리</Link><Link href="/dashboard/attendance">출석·QR 관리</Link><Link href="/dashboard/points">드림보석 관리</Link><Link href="/dashboard/notices">공지게시판 관리</Link></>}
+      {role === 'teacher' && <><Link href="/dashboard/attendance">대리 출석등록</Link><Link href="/dashboard/points">드림보석 지급</Link><Link href="/dashboard/notices">공지게시판</Link><Link href="#contacts">학생·부모 연락처</Link></>}
+      {role === 'parent' && <><Link href="#children">우리아이 정보</Link><Link href="/dashboard/notices">공지게시판</Link><Link href="#inquiry">관리자 문의</Link></>}
+      {role === 'student' && <><Link href="/dashboard/check-in">QR 출석</Link><Link href="/dashboard/notices">공지게시판</Link><Link href="#attendance">내 출석현황</Link><Link href="#points">내 보석</Link></>}
     </div></section>
   </DashboardShell>;
 }
