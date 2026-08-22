@@ -29,9 +29,10 @@ export default async function SignupPage({ searchParams }: PageProps<'/signup'>)
             <label htmlFor="signup-name">이름 *</label>
             <input id="signup-name" name="full_name" type="text" autoComplete="name" maxLength={50} placeholder="이름" required />
             <div className="signup-two-columns">
-              <label><span>비밀번호 *</span><input name="password" type="password" autoComplete="new-password" minLength={8} placeholder="8자 이상" required /></label>
+              <label><span>비밀번호 *</span><input name="password" type="password" autoComplete="new-password" minLength={8} placeholder="문자 종류 제한 없이 8자 이상" aria-describedby="signup-password-help" required /></label>
               <label><span>비밀번호 확인 *</span><input name="password_confirm" type="password" autoComplete="new-password" minLength={8} placeholder="한 번 더 입력" required /></label>
             </div>
+            <p id="signup-password-help" className="form-help">영문·숫자 조합 규칙 없이 어떤 문자든 8자 이상이면 됩니다.</p>
             <details className="signup-optional">
               <summary>선택 정보 미리 입력하기</summary>
               <div>
