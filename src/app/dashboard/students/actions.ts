@@ -28,6 +28,7 @@ function studentValues(formData: FormData) {
     phone: valueOrNull(formData.get('phone')),
     address: valueOrNull(formData.get('address')),
     school_name: valueOrNull(formData.get('school_name')),
+    birth_date: valueOrNull(formData.get('birth_date')),
     primary_parent_id: valueOrNull(formData.get('primary_parent_id')),
     note: valueOrNull(formData.get('note')),
   };
@@ -36,6 +37,7 @@ function studentValues(formData: FormData) {
 function validateStudent(values: ReturnType<typeof studentValues>) {
   if (!values.full_name || values.full_name.length > 50) return '이름은 1~50자로 입력해 주세요.';
   if (!Number.isInteger(values.grade) || values.grade < 1 || values.grade > 6) return '학년은 1~6학년 중에서 선택해 주세요.';
+  if (values.birth_date && (values.birth_date < '1900-01-01' || values.birth_date > new Date().toISOString().slice(0, 10))) return '생년월일을 올바르게 입력해 주세요.';
   if (values.primary_parent_id && !uuidPattern.test(values.primary_parent_id)) return '부모 계정 ID는 UUID 형식이어야 합니다.';
   return null;
 }
@@ -65,7 +67,7 @@ export async function createStudent(formData: FormData): Promise<CreateStudentRe
   if (validation) return { ok: false, message: validation };
   const photo = formData.get('photo'); const photoValidation = validatePhoto(photo);
   if (photoValidation) return { ok: false, message: photoValidation };
-  const { data, error } = await supabase.from('students').insert({ ...values, is_active: true }).select('id, full_name, grade, class_name, phone, address, school_name, primary_parent_id, note, is_active, photo_path').single();
+  const { data, error } = await supabase.from('students').insert({ ...values, is_active: true }).select('id, full_name, grade, class_name, phone, address, school_name, birth_date, primary_parent_id, note, is_active, photo_path').single();
   if (error) return { ok: false, message: error.code === '23503' ? '연결할 부모 계정을 찾을 수 없습니다.' : `학생을 추가하지 못했습니다. (${error.message})` };
   const savedPhoto = await saveStudentPhoto(supabase, data.id, photo);
   const student = { ...data, photo_path: savedPhoto.path ?? data.photo_path, photo_url: savedPhoto.url } as Student;
@@ -108,6 +110,7 @@ export async function updateStudent(formData: FormData): Promise<UpdateStudentRe
   const fullName = String(formData.get('full_name') ?? '').trim();
   const grade = Number(formData.get('grade'));
   const primaryParentId = valueOrNull(formData.get('primary_parent_id'));
+  const birthDate = valueOrNull(formData.get('birth_date'));
 
   if (!uuidPattern.test(id)) return { ok: false, message: '학생 식별정보가 올바르지 않습니다.' };
   if (!fullName || fullName.length > 50) return { ok: false, message: '이름은 1~50자로 입력해 주세요.' };
@@ -115,6 +118,7 @@ export async function updateStudent(formData: FormData): Promise<UpdateStudentRe
   if (primaryParentId && !uuidPattern.test(primaryParentId)) {
     return { ok: false, message: '부모 계정 ID는 UUID 형식이어야 합니다.' };
   }
+  if (birthDate && (birthDate < '1900-01-01' || birthDate > new Date().toISOString().slice(0, 10))) return { ok: false, message: '생년월일을 올바르게 입력해 주세요.' };
   const photoValidation = validatePhoto(photo);
   if (photoValidation) return { ok: false, message: photoValidation };
 
@@ -125,6 +129,7 @@ export async function updateStudent(formData: FormData): Promise<UpdateStudentRe
     phone: valueOrNull(formData.get('phone')),
     address: valueOrNull(formData.get('address')),
     school_name: valueOrNull(formData.get('school_name')),
+    birth_date: birthDate,
     primary_parent_id: primaryParentId,
     note: valueOrNull(formData.get('note')),
     is_active: formData.get('is_active') === 'on',
@@ -134,7 +139,7 @@ export async function updateStudent(formData: FormData): Promise<UpdateStudentRe
     .from('students')
     .update(updates)
     .eq('id', id)
-    .select('id, full_name, grade, class_name, phone, address, school_name, primary_parent_id, note, is_active, photo_path')
+    .select('id, full_name, grade, class_name, phone, address, school_name, birth_date, primary_parent_id, note, is_active, photo_path')
     .single();
 
   if (error) {

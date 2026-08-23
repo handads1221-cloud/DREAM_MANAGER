@@ -127,6 +127,7 @@ export function StudentManager({ initialStudents }: { initialStudents: Student[]
                 <label><span>연락처</span><input name="phone" inputMode="tel" placeholder="010-0000-0000" /></label>
                 <label className="wide"><span>주소</span><input name="address" /></label>
                 <label><span>학교명</span><input name="school_name" /></label>
+                <label><span>생년월일</span><input type="date" name="birth_date" min="1900-01-01" max={new Date().toISOString().slice(0, 10)} /></label>
                 <label><span>부모 계정 ID</span><input name="primary_parent_id" placeholder="추후 연결 가능" /></label>
                 <label className="wide"><span>얼굴 사진 (JPG·PNG·WEBP, 5MB 이하)</span><input type="file" name="photo" accept="image/jpeg,image/png,image/webp" /></label>
                 <label className="wide"><span>비고</span><textarea name="note" rows={3} /></label>
@@ -158,6 +159,7 @@ export function StudentManager({ initialStudents }: { initialStudents: Student[]
                   <label><span>연락처</span><input name="phone" defaultValue={selected.phone ?? ''} inputMode="tel" placeholder="010-0000-0000" /></label>
                   <label className="wide"><span>주소</span><input name="address" defaultValue={selected.address ?? ''} /></label>
                   <label><span>학교명</span><input name="school_name" defaultValue={selected.school_name ?? ''} /></label>
+                  <label><span>생년월일</span><input type="date" name="birth_date" min="1900-01-01" max={new Date().toISOString().slice(0, 10)} defaultValue={selected.birth_date ?? ''} /></label>
                   <label><span>부모 계정 ID</span><input name="primary_parent_id" defaultValue={selected.primary_parent_id ?? ''} placeholder="계정 연결 시 입력" /></label>
                   <label className="wide"><span>얼굴 사진 변경 (JPG·PNG·WEBP, 5MB 이하)</span><input type="file" name="photo" accept="image/jpeg,image/png,image/webp" /></label>
                   <label className="wide"><span>비고</span><textarea name="note" defaultValue={selected.note ?? ''} rows={3} /></label>
@@ -177,6 +179,7 @@ export function StudentManager({ initialStudents }: { initialStudents: Student[]
                   <div><dt>연락처</dt><dd>{selected.phone ?? emptyLabel}</dd></div>
                   <div className="wide"><dt>주소</dt><dd>{selected.address ?? emptyLabel}</dd></div>
                   <div><dt>학교명</dt><dd>{selected.school_name ?? emptyLabel}</dd></div>
+                  <div><dt>생년월일</dt><dd>{selected.birth_date ? new Date(`${selected.birth_date}T00:00:00`).toLocaleDateString('ko-KR') : emptyLabel}</dd></div>
                   <div><dt>부모 계정</dt><dd>{selected.primary_parent_id ?? '연결 안 됨'}</dd></div>
                   <div className="wide"><dt>비고</dt><dd>{selected.note ?? emptyLabel}</dd></div>
                 </dl>

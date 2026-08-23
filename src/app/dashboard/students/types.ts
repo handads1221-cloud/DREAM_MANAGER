@@ -6,6 +6,7 @@ export type Student = {
   phone: string | null;
   address: string | null;
   school_name: string | null;
+  birth_date: string | null;
   primary_parent_id: string | null;
   note: string | null;
   is_active: boolean;

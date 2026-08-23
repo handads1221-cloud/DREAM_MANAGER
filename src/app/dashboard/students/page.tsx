@@ -15,7 +15,7 @@ export default async function StudentsPage() {
     supabase.from('profiles').select('full_name, role, is_active').eq('id', userId).maybeSingle(),
     supabase
       .from('students')
-      .select('id, full_name, grade, class_name, phone, address, school_name, primary_parent_id, note, is_active, photo_path')
+      .select('id, full_name, grade, class_name, phone, address, school_name, birth_date, primary_parent_id, note, is_active, photo_path')
       .eq('is_active', true)
       .order('grade')
       .order('full_name'),
