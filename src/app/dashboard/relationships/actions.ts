@@ -50,7 +50,8 @@ export async function linkParent(formData: FormData) {
   const supabase = await adminClient(); if (!supabase) relationshipRedirect('error', '관리자 권한이 필요합니다.');
   const studentId = String(formData.get('student_id') ?? '');
   const parentId = String(formData.get('parent_id') ?? '');
-  const relationship = String(formData.get('relationship') ?? '').trim() || '보호자';
+  const relationship = String(formData.get('relationship') ?? '').trim();
+  if (!['부', '모', '조부', '조모'].includes(relationship)) relationshipRedirect('error', '자녀와의 관계를 부, 모, 조부, 조모 중에서 선택해 주세요.');
   const { data: parentRole } = await supabase.from('user_roles').select('role').eq('user_id', parentId).eq('role', 'parent').maybeSingle();
   if (!parentRole) relationshipRedirect('error', '부모 권한 계정을 찾을 수 없습니다.');
   const { data: student } = await supabase.from('students').select('full_name').eq('id', studentId).eq('is_active', true).maybeSingle();
