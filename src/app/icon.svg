@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs><linearGradient id="water" x1="108" y1="74" x2="402" y2="438" gradientUnits="userSpaceOnUse"><stop stop-color="#8ED8F3"/><stop offset="1" stop-color="#55B6E2"/></linearGradient></defs>
+  <rect x="18" y="18" width="476" height="476" rx="118" fill="#F8FCFD"/>
+  <path d="M104 73c35 12 45 57 70 76-2-29 8-52 24-75 10 35 27 46 42 8l17 34 24-42 11 45 39-30-4 45 48-14-20 41 49 6-34 34 45 22-42 22 37 36-49 7 25 42-48-12 6 48-42-25-10 48-34-35-27 44-21-45-40 28 1-49-49 15 23-43-50-3 35-37-43-18 42-25-38-32 49-10-28-40 47 11-12-48 39 25c-9-33-51-88-86-124Z" fill="url(#water)"/>
+  <path d="M221 108h70v101h93v66h-93v129h-70V275h-93v-66h93z" fill="#fff"/>
+  <path d="m202 374 23-26h62l23 26-54 59-54-59Z" fill="#fff" fill-opacity=".96" stroke="#188FC7" stroke-width="8" stroke-linejoin="round"/>
+  <path d="M202 374h108m-85-26 31 26 31-26m-31 26v59" fill="none" stroke="#188FC7" stroke-width="6" stroke-linejoin="round"/>
+</svg>
