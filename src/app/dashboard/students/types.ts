@@ -9,6 +9,8 @@ export type Student = {
   primary_parent_id: string | null;
   note: string | null;
   is_active: boolean;
+  photo_path: string | null;
+  photo_url?: string | null;
 };
 
 export type UpdateStudentResult =

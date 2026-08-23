@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState, useTransition } from 'react';
+import Image from 'next/image';
 import { createStudent, deleteStudent, updateStudent } from './actions';
 import type { Student } from './types';
 
@@ -127,6 +128,7 @@ export function StudentManager({ initialStudents }: { initialStudents: Student[]
                 <label className="wide"><span>주소</span><input name="address" /></label>
                 <label><span>학교명</span><input name="school_name" /></label>
                 <label><span>부모 계정 ID</span><input name="primary_parent_id" placeholder="추후 연결 가능" /></label>
+                <label className="wide"><span>얼굴 사진 (JPG·PNG·WEBP, 5MB 이하)</span><input type="file" name="photo" accept="image/jpeg,image/png,image/webp" /></label>
                 <label className="wide"><span>비고</span><textarea name="note" rows={3} /></label>
               </div>
               <div className="student-modal-actions"><button type="button" className="secondary" onClick={closeModal} disabled={pending}>취소</button><button type="submit" disabled={pending}>{pending ? '추가 중…' : '학생 추가'}</button></div>
@@ -140,7 +142,7 @@ export function StudentManager({ initialStudents }: { initialStudents: Student[]
           <section className="student-modal" role="dialog" aria-modal="true" aria-labelledby="student-modal-title">
             <button className="student-modal-close" onClick={closeModal} aria-label="학생 상세정보 닫기">×</button>
             <div className="student-modal-title">
-              <div className={`student-avatar grade-${selected.grade}`}>{selected.full_name.slice(-1)}</div>
+              {selected.photo_url ? <Image className="student-face-photo" src={selected.photo_url} alt={`${selected.full_name} 얼굴 사진`} width={46} height={46} /> : <div className={`student-avatar grade-${selected.grade}`}>{selected.full_name.slice(-1)}</div>}
               <div><span>{selected.grade}학년 {selected.class_name ?? '반 미정'}</span><h2 id="student-modal-title">{selected.full_name}</h2></div>
             </div>
 
@@ -157,6 +159,7 @@ export function StudentManager({ initialStudents }: { initialStudents: Student[]
                   <label className="wide"><span>주소</span><input name="address" defaultValue={selected.address ?? ''} /></label>
                   <label><span>학교명</span><input name="school_name" defaultValue={selected.school_name ?? ''} /></label>
                   <label><span>부모 계정 ID</span><input name="primary_parent_id" defaultValue={selected.primary_parent_id ?? ''} placeholder="계정 연결 시 입력" /></label>
+                  <label className="wide"><span>얼굴 사진 변경 (JPG·PNG·WEBP, 5MB 이하)</span><input type="file" name="photo" accept="image/jpeg,image/png,image/webp" /></label>
                   <label className="wide"><span>비고</span><textarea name="note" defaultValue={selected.note ?? ''} rows={3} /></label>
                   <label className="student-active-check"><input type="checkbox" name="is_active" defaultChecked={selected.is_active} /><span>현재 명단에 표시되는 재학생</span></label>
                 </div>

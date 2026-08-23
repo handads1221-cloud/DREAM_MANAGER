@@ -64,6 +64,18 @@ export async function updateAccountRole(formData: FormData) {
   accountsRedirect('message', '계정 권한을 변경했습니다.');
 }
 
+export async function updateTeacherPhoto(formData: FormData) {
+  const admin = await requireAdmin(); if (!admin) accountsRedirect('error', '관리자 권한을 확인할 수 없습니다.');
+  const userId = String(formData.get('user_id') ?? ''); const photo = formData.get('photo');
+  const { data: teacher } = await admin.supabase.from('profiles').select('role, full_name').eq('id', userId).maybeSingle();
+  if (!teacher || teacher.role !== 'teacher') accountsRedirect('error', '선생님 계정만 얼굴 사진을 등록할 수 있습니다.');
+  if (!(photo instanceof File) || photo.size === 0 || !['image/jpeg','image/png','image/webp'].includes(photo.type) || photo.size > 5 * 1024 * 1024) accountsRedirect('error', 'JPG, PNG, WEBP 사진을 5MB 이하로 선택해 주세요.');
+  const path = `teachers/${userId}/face`; const { error: uploadError } = await admin.supabase.storage.from('face-photos').upload(path, photo, { upsert: true, contentType: photo.type });
+  if (uploadError) accountsRedirect('error', `사진을 업로드하지 못했습니다. (${uploadError.message})`);
+  const { error } = await admin.supabase.from('profiles').update({ photo_path: path }).eq('id', userId); if (error) accountsRedirect('error', `사진 정보를 저장하지 못했습니다. (${error.message})`);
+  revalidatePath('/dashboard/accounts'); accountsRedirect('message', `${teacher.full_name} 선생님의 얼굴 사진을 저장했습니다.`);
+}
+
 export async function setAccountPassword(formData: FormData) {
   const admin = await requireAdmin();
   if (!admin) accountsRedirect('error', '관리자 권한을 확인할 수 없습니다.');

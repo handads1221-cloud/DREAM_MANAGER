@@ -40,16 +40,38 @@ function validateStudent(values: ReturnType<typeof studentValues>) {
   return null;
 }
 
+function validatePhoto(photo: FormDataEntryValue | null) {
+  if (!(photo instanceof File) || photo.size === 0) return null;
+  if (!['image/jpeg', 'image/png', 'image/webp'].includes(photo.type)) return '얼굴 사진은 JPG, PNG, WEBP 형식만 등록할 수 있습니다.';
+  if (photo.size > 5 * 1024 * 1024) return '얼굴 사진은 5MB 이하로 선택해 주세요.';
+  return null;
+}
+
+async function saveStudentPhoto(supabase: NonNullable<Awaited<ReturnType<typeof getAdminClient>>>, studentId: string, photo: FormDataEntryValue | null) {
+  if (!(photo instanceof File) || photo.size === 0) return { path: null, url: null, error: null };
+  const path = `students/${studentId}/face`;
+  const { error } = await supabase.storage.from('face-photos').upload(path, photo, { upsert: true, contentType: photo.type });
+  if (error) return { path: null, url: null, error: `얼굴 사진을 저장하지 못했습니다. (${error.message})` };
+  const { error: updateError } = await supabase.from('students').update({ photo_path: path }).eq('id', studentId);
+  if (updateError) return { path: null, url: null, error: `얼굴 사진 정보를 저장하지 못했습니다. (${updateError.message})` };
+  const { data: signed } = await supabase.storage.from('face-photos').createSignedUrl(path, 3600);
+  return { path, url: signed?.signedUrl ?? null, error: null };
+}
+
 export async function createStudent(formData: FormData): Promise<CreateStudentResult> {
   const supabase = await getAdminClient();
   if (!supabase) return { ok: false, message: '관리자 권한이 필요하거나 로그인이 만료되었습니다.' };
   const values = studentValues(formData); const validation = validateStudent(values);
   if (validation) return { ok: false, message: validation };
-  const { data, error } = await supabase.from('students').insert({ ...values, is_active: true }).select('id, full_name, grade, class_name, phone, address, school_name, primary_parent_id, note, is_active').single();
+  const photo = formData.get('photo'); const photoValidation = validatePhoto(photo);
+  if (photoValidation) return { ok: false, message: photoValidation };
+  const { data, error } = await supabase.from('students').insert({ ...values, is_active: true }).select('id, full_name, grade, class_name, phone, address, school_name, primary_parent_id, note, is_active, photo_path').single();
   if (error) return { ok: false, message: error.code === '23503' ? '연결할 부모 계정을 찾을 수 없습니다.' : `학생을 추가하지 못했습니다. (${error.message})` };
+  const savedPhoto = await saveStudentPhoto(supabase, data.id, photo);
+  const student = { ...data, photo_path: savedPhoto.path ?? data.photo_path, photo_url: savedPhoto.url } as Student;
   revalidatePath('/dashboard/students');
   revalidatePath('/dashboard/relationships');
-  return { ok: true, student: data as Student, message: `${values.full_name} 학생을 ${values.grade}학년 명단에 추가했습니다.` };
+  return { ok: true, student, message: savedPhoto.error ? `${values.full_name} 학생은 추가했지만 ${savedPhoto.error}` : `${values.full_name} 학생을 ${values.grade}학년 명단에 추가했습니다.` };
 }
 
 export async function deleteStudent(formData: FormData): Promise<DeleteStudentResult> {
@@ -82,6 +104,7 @@ export async function updateStudent(formData: FormData): Promise<UpdateStudentRe
   }
 
   const id = String(formData.get('id') ?? '');
+  const photo = formData.get('photo');
   const fullName = String(formData.get('full_name') ?? '').trim();
   const grade = Number(formData.get('grade'));
   const primaryParentId = valueOrNull(formData.get('primary_parent_id'));
@@ -92,6 +115,8 @@ export async function updateStudent(formData: FormData): Promise<UpdateStudentRe
   if (primaryParentId && !uuidPattern.test(primaryParentId)) {
     return { ok: false, message: '부모 계정 ID는 UUID 형식이어야 합니다.' };
   }
+  const photoValidation = validatePhoto(photo);
+  if (photoValidation) return { ok: false, message: photoValidation };
 
   const updates = {
     full_name: fullName,
@@ -109,13 +134,20 @@ export async function updateStudent(formData: FormData): Promise<UpdateStudentRe
     .from('students')
     .update(updates)
     .eq('id', id)
-    .select('id, full_name, grade, class_name, phone, address, school_name, primary_parent_id, note, is_active')
+    .select('id, full_name, grade, class_name, phone, address, school_name, primary_parent_id, note, is_active, photo_path')
     .single();
 
   if (error) {
     return { ok: false, message: error.code === '23503' ? '연결할 부모 계정을 찾을 수 없습니다.' : '저장하지 못했습니다. 잠시 후 다시 시도해 주세요.' };
   }
 
+  const savedPhoto = await saveStudentPhoto(supabase, id, photo);
+  let photoUrl: string | null = null;
+  const photoPath = savedPhoto.path ?? data.photo_path;
+  if (photoPath && !savedPhoto.url) {
+    const { data: signed } = await supabase.storage.from('face-photos').createSignedUrl(photoPath, 3600);
+    photoUrl = signed?.signedUrl ?? null;
+  }
   revalidatePath('/dashboard/students');
-  return { ok: true, student: data as Student, message: `${fullName} 학생 정보를 저장했습니다.` };
+  return { ok: true, student: { ...data, photo_path: photoPath, photo_url: savedPhoto.url ?? photoUrl } as Student, message: savedPhoto.error ? `학생 정보는 저장했지만 ${savedPhoto.error}` : `${fullName} 학생 정보를 저장했습니다.` };
 }

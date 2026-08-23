@@ -325,6 +325,12 @@ button { color: inherit; }
 .student-card { min-width: 0; padding: 17px; display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 12px; border: 1px solid var(--line); border-radius: 18px; background: #fff; transition: transform .16s ease, border-color .16s ease; }
 .student-card:hover { transform: translateY(-2px); border-color: #b6ddcf; }
 .student-avatar { width: 46px; height: 46px; display: grid; place-items: center; border-radius: 15px; font-weight: 900; }
+.student-face-photo { width: 46px; height: 46px; border-radius: 15px; object-fit: cover; }
+.managed-face-photo { width: 48px; height: 48px; flex: 0 0 48px; border-radius: 50%; object-fit: cover; }
+.teacher-photo-form { display: flex; align-items: end; gap: 10px; padding: 12px 0; border-top: 1px solid var(--line); }
+.teacher-photo-form label { display: grid; flex: 1; gap: 5px; color: #66716d; font-size: 11px; font-weight: 800; }
+.teacher-photo-form input { width: 100%; padding: 9px; border: 1px solid var(--line); border-radius: 9px; background: #fff; font-size: 11px; }
+.teacher-photo-form button { padding: 10px 14px; border: 0; border-radius: 9px; background: var(--mint); color: #fff; font-weight: 800; cursor: pointer; }
 .student-avatar.grade-1 { background: #eaf9f3; color: #087b57; }.student-avatar.grade-2 { background: #fff7d9; color: #8d6c00; }.student-avatar.grade-3 { background: #edf4fd; color: #356ba9; }.student-avatar.grade-4 { background: #fff0ef; color: #b64d45; }.student-avatar.grade-5 { background: #f2ecff; color: #7750b1; }.student-avatar.grade-6 { background: #eef2f0; color: #4e5e57; }
 .student-summary { min-width: 0; }
 .student-summary span { color: var(--mint); font-size: 9px; font-weight: 800; }
