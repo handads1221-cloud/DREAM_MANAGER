@@ -1,6 +1,6 @@
 import type { SVGProps } from 'react';
 
-export type AppIconName = 'home' | 'students' | 'relationships' | 'attendance' | 'gem' | 'notice' | 'accounts' | 'contact' | 'child' | 'teacher' | 'inquiry' | 'qr';
+export type AppIconName = 'home' | 'students' | 'relationships' | 'attendance' | 'calendar' | 'gem' | 'notice' | 'accounts' | 'contact' | 'child' | 'teacher' | 'inquiry' | 'qr';
 type Props = SVGProps<SVGSVGElement> & { name: AppIconName };
 
 export function AppIcon({ name, ...props }: Props) {
@@ -10,6 +10,7 @@ export function AppIcon({ name, ...props }: Props) {
     {name === 'students' && <><circle cx="9" cy="8" r="3"/><path d="M3.8 19c.5-3.2 2.3-5 5.2-5s4.7 1.8 5.2 5M15.5 6.2a2.7 2.7 0 0 1 0 5.2M16.2 14.1c2.3.4 3.7 2 4 4.4"/></>}
     {name === 'relationships' && <><circle cx="7" cy="7" r="2.5"/><circle cx="17" cy="7" r="2.5"/><circle cx="12" cy="17" r="2.5"/><path d="m8.7 8.9 2 5.7m4.6-5.7-2 5.7M9.5 7h5"/></>}
     {name === 'attendance' && <><rect x="4" y="4" width="16" height="16" rx="3"/><path d="m8 12 2.5 2.5L16.5 9"/></>}
+    {name === 'calendar' && <><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M7.5 3v4M16.5 3v4M3.5 9h17M7 13h2M12 13h2M7 16.5h2M12 16.5h2"/></>}
     {name === 'gem' && <><path d="m5 9 2.7-3h8.6L19 9l-7 9-7-9Z"/><path d="M5 9h14M7.7 6 12 9l4.3-3M12 9v9M12 3V1.5M5.2 4.2 4 3m14.8 1.2L20 3"/></>}
     {name === 'notice' && <><path d="M6 4h12v16H6zM9 8h6M9 12h6M9 16h4"/></>}
     {name === 'accounts' && <><circle cx="9" cy="8" r="3"/><path d="M3.5 19c.5-3.4 2.4-5 5.5-5 1.3 0 2.4.3 3.3.9M17 14v6M14 17h6"/></>}
