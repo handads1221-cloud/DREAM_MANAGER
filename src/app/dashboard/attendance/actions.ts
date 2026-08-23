@@ -14,6 +14,11 @@ export async function saveAttendance(formData: FormData) {
 
 export async function submitQr(formData: FormData) {
   const token = String(formData.get('token') ?? ''); const supabase = await createClient(); const { data, error } = await supabase.rpc('submit_qr_attendance', { raw_token: token });
-  const message = error ? '오늘 날짜의 출석 QR이 아닙니다. 관리자 화면의 당일 QR을 다시 촬영해 주세요.' : String(data ?? '출석이 완료되었습니다.');
+  const rawError = error?.message.toLowerCase() ?? '';
+  const message = !error ? String(data ?? '출석이 완료되었습니다.')
+    : rawError.includes('student profile not linked') ? '학생 계정이 학생 명단에 연결되지 않았습니다. 관리자에게 학생계정 연결을 요청해 주세요.'
+    : rawError.includes('student account required') ? '학생 계정으로 로그인해야 QR 출석을 할 수 있습니다.'
+    : rawError.includes('invalid daily qr') ? '오늘 날짜의 출석 QR이 아닙니다. 관리자 화면의 당일 QR을 다시 촬영해 주세요.'
+    : '출석 처리 중 오류가 발생했습니다. 잠시 후 다시 시도하거나 관리자에게 문의해 주세요.';
   redirect(`/dashboard/check-in?message=${encodeURIComponent(message)}&success=${error ? '0' : '1'}`);
 }
