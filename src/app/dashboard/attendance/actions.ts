@@ -4,12 +4,26 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 
-export async function saveAttendance(formData: FormData) {
-  const supabase = await createClient(); const { data } = await supabase.auth.getClaims(); if (!data?.claims?.sub) return;
-  const eventId = String(formData.get('event_id') ?? ''); const studentId = String(formData.get('student_id') ?? ''); const status = String(formData.get('status') ?? 'present');
-  if (!['present','late','excused','absent'].includes(status)) return;
-  await supabase.from('attendance_records').upsert({ event_id: eventId, student_id: studentId, status, method: 'teacher', checked_by: data.claims.sub }, { onConflict: 'event_id,student_id' });
+export type BulkAttendanceResult = { ok: true; action: 'present' | 'cancel'; studentIds: string[]; message: string } | { ok: false; message: string };
+
+export async function updateBulkAttendance(formData: FormData): Promise<BulkAttendanceResult> {
+  const supabase = await createClient(); const { data } = await supabase.auth.getClaims(); const userId = data?.claims?.sub;
+  if (!userId) return { ok: false, message: '로그인이 만료되었습니다. 다시 로그인해 주세요.' };
+  const { data: profile } = await supabase.from('profiles').select('role, is_active').eq('id', userId).maybeSingle();
+  if (!profile?.is_active || !['admin', 'teacher'].includes(profile.role)) return { ok: false, message: '출석관리 권한이 없습니다.' };
+  const eventId = String(formData.get('event_id') ?? ''); const action = String(formData.get('attendance_action') ?? '');
+  const studentIds = [...new Set(formData.getAll('student_ids').map(String).filter(Boolean))];
+  if (!eventId || studentIds.length === 0) return { ok: false, message: '처리할 학생을 한 명 이상 선택해 주세요.' };
+  if (action === 'cancel') {
+    const { error } = await supabase.from('attendance_records').delete().eq('event_id', eventId).in('student_id', studentIds);
+    if (error) return { ok: false, message: `출석을 취소하지 못했습니다. (${error.message})` };
+  } else if (action === 'present') {
+    const rows = studentIds.map((studentId) => ({ event_id: eventId, student_id: studentId, status: 'present', method: 'teacher', checked_by: userId }));
+    const { error } = await supabase.from('attendance_records').upsert(rows, { onConflict: 'event_id,student_id' });
+    if (error) return { ok: false, message: `출석을 등록하지 못했습니다. (${error.message})` };
+  } else return { ok: false, message: '올바르지 않은 출석 처리 요청입니다.' };
   revalidatePath('/dashboard/attendance');
+  return { ok: true, action, studentIds, message: action === 'present' ? `${studentIds.length}명의 출석을 등록했습니다.` : `${studentIds.length}명의 출석을 취소했습니다.` };
 }
 
 export async function submitQr(formData: FormData) {
