@@ -63,6 +63,24 @@ export async function linkParent(formData: FormData) {
   relationshipRedirect('message', `${student.full_name} 학생을 부모 계정에 연결했습니다.`);
 }
 
+export async function unlinkParent(formData: FormData) {
+  const supabase = await adminClient(); if (!supabase) relationshipRedirect('error', '관리자 권한이 필요합니다.');
+  const studentId = String(formData.get('student_id') ?? '');
+  const parentId = String(formData.get('parent_id') ?? '');
+  const { data: student } = await supabase.from('students').select('full_name, primary_parent_id').eq('id', studentId).eq('is_active', true).maybeSingle();
+  if (!student || !parentId) relationshipRedirect('error', '해제할 부모–자녀 관계를 찾을 수 없습니다.');
+  const { data: deleted, error } = await supabase.from('student_guardians').delete().eq('student_id', studentId).eq('parent_id', parentId).select('student_id').maybeSingle();
+  if (error) relationshipRedirect('error', `관계를 해제하지 못했습니다. (${error.message})`);
+  if (!deleted) relationshipRedirect('error', '이미 해제되었거나 존재하지 않는 관계입니다.');
+  if (student.primary_parent_id === parentId) {
+    const { data: nextGuardian } = await supabase.from('student_guardians').select('parent_id').eq('student_id', studentId).order('is_primary', { ascending: false }).order('created_at').limit(1).maybeSingle();
+    await supabase.from('students').update({ primary_parent_id: nextGuardian?.parent_id ?? null }).eq('id', studentId);
+    if (nextGuardian) await supabase.from('student_guardians').update({ is_primary: true }).eq('student_id', studentId).eq('parent_id', nextGuardian.parent_id);
+  }
+  revalidatePath('/dashboard/relationships');
+  relationshipRedirect('message', `${student.full_name} 학생과의 가족 관계를 해제했습니다.`);
+}
+
 export async function assignTeacher(formData: FormData) {
   const supabase = await adminClient(); if (!supabase) relationshipRedirect('error', '관리자 권한이 필요합니다.');
   const teacherId = String(formData.get('teacher_id') ?? '');
