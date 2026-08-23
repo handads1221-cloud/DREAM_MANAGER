@@ -185,12 +185,9 @@ button { color: inherit; }
 .auth-description { margin: 0 0 28px; color: var(--muted); font-size: 14px; }
 .auth-form { display: grid; gap: 9px; }
 .auth-form label { margin-top: 7px; font-size: 12px; font-weight: 800; }
-.auth-form input, .reset-form input { width: 100%; height: 48px; border: 1px solid #dfe5e1; border-radius: 13px; padding: 0 15px; outline: none; background: #fbfcfb; }
-.auth-form input:focus, .reset-form input:focus { border-color: var(--mint); box-shadow: 0 0 0 3px rgba(22,183,131,.12); }
+.auth-form input { width: 100%; height: 48px; border: 1px solid #dfe5e1; border-radius: 13px; padding: 0 15px; outline: none; background: #fbfcfb; }
+.auth-form input:focus { border-color: var(--mint); box-shadow: 0 0 0 3px rgba(22,183,131,.12); }
 .auth-form button { height: 50px; margin-top: 13px; border: 0; border-radius: 14px; background: var(--mint); color: #fff; font-weight: 850; cursor: pointer; }
-.reset-form { display: grid; grid-template-columns: 1fr auto; gap: 8px; margin-top: 14px; }
-.reset-form input { height: 42px; }
-.reset-form button { border: 1px solid #dfe5e1; border-radius: 12px; background: #fff; padding: 0 13px; font-size: 11px; font-weight: 800; cursor: pointer; }
 .auth-help { display: block; margin-top: 22px; color: #929a96; line-height: 1.6; }
 .signup-link-button { display: grid; place-items: center; min-height: 46px; margin-top: 12px; border: 1px solid #b9ded0; border-radius: 13px; color: #087b57; text-decoration: none; font-size: 12px; font-weight: 850; }
 .signup-page { grid-template-columns: minmax(360px, .8fr) minmax(560px, 1.2fr); }
@@ -286,7 +283,7 @@ button { color: inherit; }
 .notice-reader-log { margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--line); }.notice-reader-log h3 { margin: 0 0 10px; font-size: 14px; }.notice-reader-log > div { padding: 10px 0; display: flex; justify-content: space-between; gap: 15px; border-bottom: 1px solid var(--line); }.notice-reader-log > div > span { display: grid; gap: 3px; }.notice-reader-log > div > span:last-child { text-align: right; }.notice-reader-log b { font-size: 10px; }.notice-reader-log small, .notice-reader-log > p { color: var(--muted); font-size: 9px; }
 @media (max-width: 760px) { .notice-page-heading { align-items: flex-start; flex-direction: column; }.notice-board-layout { grid-template-columns: 1fr; }.notice-list { max-height: 280px; overflow-y: auto; }.notice-detail { padding: 19px; }.password-admin form { grid-template-columns: 1fr; }.password-admin p { grid-column: auto; } }
 @media (max-width: 1050px) { .operation-stat-grid { grid-template-columns: repeat(2, 1fr); }.approval-card { grid-template-columns: 1fr; }.approval-actions { justify-content: flex-start; } }
-@media (max-width: 900px) { .operation-content { padding-bottom: 105px; }.operation-profile form { display: none; }.role-home-panel { grid-template-columns: 1fr; } }
+@media (max-width: 900px) { .operation-content { padding-bottom: 105px; }.operation-profile { gap: 6px; }.operation-profile form { display: block; }.operation-profile form button { padding: 8px 9px; font-size: 9px; }.role-home-panel { grid-template-columns: 1fr; } }
 @media (max-width: 560px) { .operation-welcome { min-height: 230px; align-items: flex-start; flex-direction: column; }.role-home-badge { max-width: 100%; }.home-qr-button { width: 100%; min-width: 0; }.operation-stat-grid { grid-template-columns: 1fr 1fr; }.operation-stat { min-height: 115px; padding: 16px; }.operation-stat strong { font-size: 22px; }.role-quick-links { grid-template-columns: 1fr; }.account-page-heading { align-items: flex-start; flex-direction: column; }.approval-card dl { grid-template-columns: 1fr; }.approval-actions, .approval-actions form:first-child { width: 100%; display: grid; grid-template-columns: 1fr 1.4fr; }.approval-actions > form:last-child { display: block; }.approval-actions select, .approval-actions button { width: 100%; } }
 
 .module-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; margin-bottom: 25px; }.module-heading h1 { margin: 4px 0 7px; font-size: clamp(30px,4vw,42px); letter-spacing: -.055em; }.module-heading div > span { color: var(--muted); font-size: 12px; }.module-primary-link, .gem-heading-total { padding: 11px 15px; border-radius: 12px; background: var(--mint); color: #fff; text-decoration: none; font-size: 11px; font-weight: 850; }

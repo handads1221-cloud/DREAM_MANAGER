@@ -24,13 +24,3 @@ export async function signIn(formData: FormData) {
   }
   redirect('/dashboard');
 }
-
-export async function sendResetLink(formData: FormData) {
-  const email = String(formData.get('email') ?? '').trim();
-  const supabase = await createClient();
-  const { headers } = await import('next/headers');
-  const requestHeaders = await headers();
-  const origin = requestHeaders.get('origin') ?? 'https://dream-manager.vercel.app';
-  await supabase.auth.resetPasswordForEmail(email, { redirectTo: `${origin}/auth/confirm?next=/reset-password` });
-  redirect(`/login?message=${encodeURIComponent('비밀번호 재설정 메일을 확인해 주세요.')}`);
-}

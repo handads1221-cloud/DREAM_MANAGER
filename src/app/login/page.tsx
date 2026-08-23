@@ -1,6 +1,6 @@
 import Image from 'next/image';
 import Link from 'next/link';
-import { signIn, sendResetLink } from './actions';
+import { signIn } from './actions';
 
 export default async function LoginPage({ searchParams }: PageProps<'/login'>) {
   const params = await searchParams;
@@ -31,10 +31,6 @@ export default async function LoginPage({ searchParams }: PageProps<'/login'>) {
             <label htmlFor="password">비밀번호</label>
             <input id="password" name="password" type="password" autoComplete="current-password" placeholder="비밀번호를 입력하세요" required />
             <button type="submit">로그인</button>
-          </form>
-          <form action={sendResetLink} className="reset-form">
-            <input name="email" type="email" aria-label="비밀번호를 재설정할 이메일" placeholder="재설정할 이메일" required />
-            <button type="submit">비밀번호 재설정</button>
           </form>
           <Link href="/signup" className="signup-link-button">처음이신가요? 가입 신청하기</Link>
           <small className="auth-help">가입 후 이메일 인증과 관리자 승인이 완료되면 계정별 홈을 이용할 수 있습니다.</small>
