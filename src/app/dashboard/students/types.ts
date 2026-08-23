@@ -12,6 +12,7 @@ export type Student = {
   is_active: boolean;
   photo_path: string | null;
   photo_url?: string | null;
+  guardians?: { name: string; relationship: string }[];
 };
 
 export type UpdateStudentResult =
