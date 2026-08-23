@@ -95,6 +95,20 @@ export async function assignTeacher(formData: FormData) {
   relationshipRedirect('message', `${teacher?.full_name ?? '선생님'}을 ${grade}학년 ${className}에 연결했습니다.`);
 }
 
+export async function unassignTeacher(formData: FormData) {
+  const supabase = await adminClient(); if (!supabase) relationshipRedirect('error', '관리자 권한이 필요합니다.');
+  const teacherId = String(formData.get('teacher_id') ?? '');
+  const grade = Number(formData.get('grade'));
+  const className = String(formData.get('class_name') ?? '').trim();
+  if (!teacherId || !Number.isInteger(grade) || grade < 1 || grade > 6 || !className) relationshipRedirect('error', '취소할 담당반 정보를 확인해 주세요.');
+  const { data: teacher } = await supabase.from('profiles').select('full_name').eq('id', teacherId).maybeSingle();
+  const { data: deleted, error } = await supabase.from('teacher_assignments').delete().eq('teacher_id', teacherId).eq('grade', grade).eq('class_name', className).eq('school_year', new Date().getFullYear()).select('teacher_id').maybeSingle();
+  if (error) relationshipRedirect('error', `담당반 배정을 취소하지 못했습니다. (${error.message})`);
+  if (!deleted) relationshipRedirect('error', '이미 취소되었거나 존재하지 않는 담당반 배정입니다.');
+  revalidatePath('/dashboard/relationships');
+  relationshipRedirect('message', `${teacher?.full_name ?? '선생님'}의 ${grade}학년 ${className} 담당 배정을 취소했습니다.`);
+}
+
 export async function updateParentProfile(formData: FormData) {
   const supabase = await adminClient(); if (!supabase) relationshipRedirect('error', '관리자 권한이 필요합니다.');
   const parentId = String(formData.get('parent_id') ?? '');
