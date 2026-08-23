@@ -1,8 +1,8 @@
-import Image from 'next/image';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { DashboardShell } from '../dashboard-shell';
-import { approveRegistration, rejectRegistration, restoreAccount, setAccountPassword, updateAccountRole, updateTeacherBirthDate, updateTeacherPhoto, withdrawAccount } from './actions';
+import { approveRegistration, rejectRegistration, restoreAccount } from './actions';
+import { ActiveAccountManager, type ManagedAccount } from './active-account-manager';
 
 const roleLabel: Record<string, string> = { admin: '관리자', teacher: '선생님', parent: '부모님', student: '학생' };
 const roleOrder = ['parent', 'student', 'teacher', 'admin'] as const;
@@ -20,7 +20,7 @@ export default async function AccountsPage({ searchParams }: PageProps<'/dashboa
   if (!profile || profile.role !== 'admin' || !profile.is_active) redirect('/dashboard');
   const [{ data: requests }, { data: accounts }, { data: assignedRoles }] = await Promise.all([
     supabase.from('registration_requests').select('user_id, email, full_name, phone, address, note, status, requested_at').order('requested_at', { ascending: false }),
-    supabase.from('profiles').select('id, email, full_name, role, phone, birth_date, is_active, account_status, withdrawn_at, withdrawal_note, photo_path').order('full_name'),
+    supabase.from('profiles').select('id, email, full_name, role, phone, address, note, birth_date, is_active, account_status, withdrawn_at, withdrawal_note, photo_path').order('full_name'),
     supabase.from('user_roles').select('user_id, role'),
   ]);
   const requestRows = requests ?? [];
@@ -34,6 +34,7 @@ export default async function AccountsPage({ searchParams }: PageProps<'/dashboa
     const { data: signed } = await supabase.storage.from('face-photos').createSignedUrl(account.photo_path!, 3600);
     return [account.id, signed?.signedUrl ?? ''] as const;
   })));
+  const managedAccounts: ManagedAccount[] = activeAccounts.map((account) => ({ ...account, roles: rolesByUser.get(account.id) ?? [account.role], photoUrl: teacherPhotos.get(account.id) || null }));
 
   return <DashboardShell profile={{ full_name: profile.full_name, role: 'admin' }} activeHref="/dashboard/accounts">
     <div className="account-page-heading"><div><p className="eyebrow">ACCOUNT MANAGEMENT</p><h1>가입·계정관리</h1><span>가입 승인, 권한 변경, 비밀번호 재설정과 탈퇴 계정을 관리합니다.</span></div><strong>승인 대기 {pending.length}건</strong></div>
@@ -43,14 +44,7 @@ export default async function AccountsPage({ searchParams }: PageProps<'/dashboa
       <dl><div><dt>연락처</dt><dd>{request.phone || '미입력'}</dd></div><div><dt>주소</dt><dd>{request.address || '미입력'}</dd></div>{request.note && <div><dt>비고</dt><dd>{request.note}</dd></div>}</dl>
       <div className="approval-actions"><form action={approveRegistration}><input type="hidden" name="user_id" value={request.user_id} /><RoleChecks /><button type="submit">승인하고 권한 부여</button></form><form action={rejectRegistration}><input type="hidden" name="user_id" value={request.user_id} /><button type="submit" className="reject">반려</button></form></div>
     </article>)}</div>}</section>
-    <section className="account-management-section"><div className="section-title-row"><div><h2>활성 계정</h2><p>권한과 비밀번호를 관리합니다.</p></div><b>{activeAccounts.length}개</b></div><div className="managed-account-list">{activeAccounts.map((account) => <article key={account.id} className="managed-account-card">
-      <div className="managed-account-person">{teacherPhotos.get(account.id) ? <Image className="managed-face-photo" src={teacherPhotos.get(account.id)!} alt={`${account.full_name} 얼굴 사진`} width={48} height={48} /> : <span>{account.full_name.slice(0, 1)}</span>}<div><h3>{account.full_name}</h3><p>{account.email ?? '이메일 정보 없음'} · {account.phone || '연락처 미입력'}</p></div><div className="account-role-list">{(rolesByUser.get(account.id) ?? [account.role]).map((role) => <b key={role} className={`account-role ${role}`}>{roleLabel[role]}</b>)}</div></div>
-      {rolesByUser.get(account.id)?.includes('teacher') && <form action={updateTeacherPhoto} className="teacher-photo-form"><input type="hidden" name="user_id" value={account.id} /><label><span>선생님 얼굴 사진</span><input type="file" name="photo" accept="image/jpeg,image/png,image/webp" required /></label><button type="submit">사진 저장</button></form>}
-      {rolesByUser.get(account.id)?.includes('teacher') && <form action={updateTeacherBirthDate} className="teacher-birth-form"><input type="hidden" name="user_id" value={account.id}/><label><span>선생님 생년월일</span><input type="date" name="birth_date" defaultValue={account.birth_date ?? ''}/></label><button type="submit">생일 저장</button></form>}
-      <div className="managed-account-actions"><form action={updateAccountRole}><input type="hidden" name="user_id" value={account.id} /><RoleChecks selected={rolesByUser.get(account.id) ?? [account.role]} disabled={account.id === currentUserId} /><button type="submit" disabled={account.id === currentUserId}>권한 변경</button></form>
-      {account.id !== currentUserId && <details className="password-admin"><summary>비밀번호 직접 변경</summary><form action={setAccountPassword}><input type="hidden" name="user_id" value={account.id} /><label><span>새 비밀번호</span><input name="new_password" type="password" minLength={8} placeholder="8자 이상" required /></label><label><span>새 비밀번호 확인</span><input name="new_password_confirm" type="password" minLength={8} placeholder="한 번 더 입력" required /></label><p>메일은 발송되지 않으며 변경 즉시 기존 로그인 세션이 종료됩니다.</p><button type="submit">새 비밀번호 적용</button></form></details>}
-      {account.id !== currentUserId && <details className="withdraw-account"><summary>탈퇴 처리</summary><form action={withdrawAccount}><input type="hidden" name="user_id" value={account.id} /><input name="withdrawal_note" maxLength={200} placeholder="탈퇴 사유 (선택)" /><p>로그인만 차단되며 기존 데이터는 삭제되지 않습니다.</p><button type="submit">탈퇴 계정으로 전환</button></form></details>}</div>
-    </article>)}{activeAccounts.length === 0 && <div className="account-empty">활성 계정이 없습니다.</div>}</div></section>
+    <section className="account-management-section"><div className="section-title-row"><div><h2>활성 계정</h2><p>계정을 선택하면 상세정보와 관리 기능이 열립니다.</p></div><b>{activeAccounts.length}개</b></div><ActiveAccountManager accounts={managedAccounts} currentUserId={currentUserId}/></section>
     <section className="account-management-section withdrawn"><div className="section-title-row"><div><h2>탈퇴 계정</h2><p>데이터는 보존되며 로그인만 차단된 계정입니다.</p></div><b>{withdrawnAccounts.length}개</b></div><div className="managed-account-list">{withdrawnAccounts.map((account) => <article key={account.id} className="managed-account-card withdrawn"><div className="managed-account-person"><span>{account.full_name.slice(0, 1)}</span><div><h3>{account.full_name}</h3><p>{account.email ?? '이메일 정보 없음'} · {roleLabel[account.role] ?? account.role}</p><small>{account.withdrawn_at ? `${new Date(account.withdrawn_at).toLocaleDateString('ko-KR')} 탈퇴` : '비활성 계정'}{account.withdrawal_note ? ` · ${account.withdrawal_note}` : ''}</small></div><b className="account-role withdrawn">로그인 차단</b></div><form action={restoreAccount} className="restore-account-form"><input type="hidden" name="user_id" value={account.id} /><button type="submit">계정 복구</button></form></article>)}{withdrawnAccounts.length === 0 && <div className="account-empty">탈퇴 처리된 계정이 없습니다.</div>}</div></section>
     <section className="reviewed-section"><h2>가입 처리 내역</h2><div className="reviewed-list">{reviewed.slice(0, 20).map((request) => <div key={request.user_id}><span>{request.full_name} · {request.email}</span><b className={request.status}>{request.status === 'approved' ? '승인 완료' : '반려'}</b></div>)}{reviewed.length === 0 && <p>처리된 가입 신청이 없습니다.</p>}</div></section>
   </DashboardShell>;

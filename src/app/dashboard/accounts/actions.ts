@@ -71,6 +71,22 @@ export async function updateAccountRole(formData: FormData) {
   accountsRedirect('message', '계정의 복수 권한을 변경했습니다.');
 }
 
+export async function updateAccountProfile(formData: FormData) {
+  const admin = await requireAdmin();
+  if (!admin) accountsRedirect('error', '관리자 권한을 확인할 수 없습니다.');
+  const userId = String(formData.get('user_id') ?? '');
+  const fullName = String(formData.get('full_name') ?? '').trim();
+  const phone = String(formData.get('phone') ?? '').trim().slice(0, 30);
+  const address = String(formData.get('address') ?? '').trim().slice(0, 300);
+  const note = String(formData.get('note') ?? '').trim().slice(0, 500);
+  if (!userId || !fullName) accountsRedirect('error', '계정 이름은 반드시 입력해 주세요.');
+  const { error } = await admin.supabase.from('profiles').update({ full_name: fullName, phone: phone || null, address: address || null, note: note || null }).eq('id', userId);
+  if (error) accountsRedirect('error', `계정 정보를 수정하지 못했습니다. (${error.message})`);
+  revalidatePath('/dashboard/accounts');
+  revalidatePath('/dashboard');
+  accountsRedirect('message', `${fullName}님의 계정 정보를 수정했습니다.`);
+}
+
 export async function updateTeacherPhoto(formData: FormData) {
   const admin = await requireAdmin(); if (!admin) accountsRedirect('error', '관리자 권한을 확인할 수 없습니다.');
   const userId = String(formData.get('user_id') ?? ''); const photo = formData.get('photo');
