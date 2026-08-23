@@ -19,14 +19,21 @@ export default async function RelationshipsPage({ searchParams }: PageProps<'/da
     supabase.from('student_guardians').select('student_id, parent_id, relationship'),
     supabase.from('teacher_assignments').select('teacher_id, grade, class_name').eq('school_year', new Date().getFullYear()),
   ]);
-  const signedUrl = async (path: string | null) => path ? (await supabase.storage.from('face-photos').createSignedUrl(path, 3600)).data?.signedUrl ?? null : null;
-  const studentRows = await Promise.all((students ?? []).map(async (student) => ({ ...student, photo_url: await signedUrl(student.photo_path), guardians: (guardians ?? []).filter((item) => item.student_id === student.id).map(({ parent_id, relationship }) => ({ parent_id, relationship })) })));
+  const photoPaths = [...new Set([...(students ?? []).map((item) => item.photo_path), ...(accounts ?? []).map((item) => item.photo_path)].filter((path): path is string => Boolean(path)))];
+  const { data: signedPhotos } = photoPaths.length ? await supabase.storage.from('face-photos').createSignedUrls(photoPaths, 3600) : { data: [] };
+  const photoUrlByPath = new Map<string, string>();
+  for (const photo of signedPhotos ?? []) if (photo.path && photo.signedUrl) photoUrlByPath.set(photo.path, photo.signedUrl);
+  const guardianByStudent = new Map<string, { parent_id: string; relationship: string }[]>();
+  for (const item of guardians ?? []) guardianByStudent.set(item.student_id, [...(guardianByStudent.get(item.student_id) ?? []), { parent_id: item.parent_id, relationship: item.relationship }]);
+  const studentRows = (students ?? []).map((student) => ({ ...student, photo_url: student.photo_path ? photoUrlByPath.get(student.photo_path) ?? null : null, guardians: guardianByStudent.get(student.id) ?? [] }));
   const roleIds = (role: string) => new Set((roles ?? []).filter((item) => item.role === role).map((item) => item.user_id));
   const studentIds = roleIds('student'); const parentIds = roleIds('parent'); const teacherIds = roleIds('teacher');
-  const mapAccount = async (account: NonNullable<typeof accounts>[number]) => ({ id: account.id, full_name: account.full_name, email: account.email, phone: account.phone, photo_url: await signedUrl(account.photo_path) });
-  const studentAccounts = await Promise.all((accounts ?? []).filter((account) => studentIds.has(account.id)).map(mapAccount));
-  const parents = await Promise.all((accounts ?? []).filter((account) => parentIds.has(account.id)).map(mapAccount));
-  const teachers = await Promise.all((accounts ?? []).filter((account) => teacherIds.has(account.id)).map(async (account) => ({ ...(await mapAccount(account)), assignments: (assignments ?? []).filter((item) => item.teacher_id === account.id).map(({ grade, class_name }) => ({ grade, class_name })) })));
+  const mapAccount = (account: NonNullable<typeof accounts>[number]) => ({ id: account.id, full_name: account.full_name, email: account.email, phone: account.phone, photo_url: account.photo_path ? photoUrlByPath.get(account.photo_path) ?? null : null });
+  const studentAccounts = (accounts ?? []).filter((account) => studentIds.has(account.id)).map(mapAccount);
+  const parents = (accounts ?? []).filter((account) => parentIds.has(account.id)).map(mapAccount);
+  const assignmentsByTeacher = new Map<string, { grade: number; class_name: string }[]>();
+  for (const item of assignments ?? []) assignmentsByTeacher.set(item.teacher_id, [...(assignmentsByTeacher.get(item.teacher_id) ?? []), { grade: item.grade, class_name: item.class_name }]);
+  const teachers = (accounts ?? []).filter((account) => teacherIds.has(account.id)).map((account) => ({ ...mapAccount(account), assignments: assignmentsByTeacher.get(account.id) ?? [] }));
   return <DashboardShell profile={{ full_name: profile.full_name, role: 'admin' }} activeHref="/dashboard/relationships">
     <div className="module-heading"><div><p className="eyebrow">RELATIONSHIPS</p><h1>계정·가족·담당 연결</h1><span>명단에서 사람을 선택해 학생계정, 부모–자녀, 담임반을 간편하게 연결합니다.</span></div></div>
     {message && <p className="form-alert success account-feedback">{message}</p>}{error && <p className="form-alert error account-feedback">{error}</p>}

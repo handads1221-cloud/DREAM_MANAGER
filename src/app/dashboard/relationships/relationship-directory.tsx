@@ -17,9 +17,16 @@ export function RelationshipDirectory({ students, studentAccounts, parents, teac
   const [teacher, setTeacher] = useState<Teacher | null>(null);
   const [photoTarget, setPhotoTarget] = useState<{ id: string; name: string; kind: 'student' | 'teacher' } | null>(null);
   const linkedIds = useMemo(() => new Set(students.map((item) => item.profile_id).filter(Boolean)), [students]);
+  const studentAccountById = useMemo(() => new Map(studentAccounts.map((account) => [account.id, account])), [studentAccounts]);
+  const parentById = useMemo(() => new Map(parents.map((account) => [account.id, account])), [parents]);
+  const childrenByParent = useMemo(() => {
+    const index = new Map<string, Student[]>();
+    for (const item of students) for (const guardian of item.guardians) index.set(guardian.parent_id, [...(index.get(guardian.parent_id) ?? []), item]);
+    return index;
+  }, [students]);
   const availableAccounts = studentAccounts.filter((account) => !linkedIds.has(account.id) || account.id === student?.profile_id);
   const visibleStudents = grade === 'all' ? students : students.filter((item) => item.grade === grade);
-  const childrenFor = (id: string) => students.filter((item) => item.guardians.some((guardian) => guardian.parent_id === id));
+  const childrenFor = (id: string) => childrenByParent.get(id) ?? [];
   const visibleParents = unassignedOnly ? parents.filter((item) => childrenFor(item.id).length === 0) : parents;
   const visibleTeachers = unassignedOnly ? teachers.filter((item) => item.assignments.length === 0) : teachers;
   const counts = students.reduce<Record<number, number>>((all, item) => ({ ...all, [item.grade]: (all[item.grade] ?? 0) + 1 }), {});
@@ -34,7 +41,7 @@ export function RelationshipDirectory({ students, studentAccounts, parents, teac
 
     {tab === 'students' && <><div className="relationship-toolbar"><div className="management-grade-filter"><button className={grade === 'all' ? 'active' : ''} onClick={() => setGrade('all')}>전체 <span>{students.length}</span></button>{[1,2,3,4,5,6].map((item) => <button key={item} className={grade === item ? 'active' : ''} onClick={() => setGrade(item)}>{item}학년 <span>{counts[item] ?? 0}</span></button>)}</div></div><div className="directory-list directory-students"><div className="directory-head"><span>사진</span><span>학생</span><span>학년·반</span><span>학생계정</span><span>보호자</span></div>{visibleStudents.map((item) => <div className="directory-row" key={item.id}>
       <AvatarButton url={item.photo_url} name={item.full_name} onClick={() => setPhotoTarget({ id: item.id, name: item.full_name, kind: 'student' })}/>
-      <button className="directory-name-button" onClick={() => setStudent(item)}>{item.full_name}</button><span>{item.grade}학년 · {item.class_name || '반 미정'}</span><span className={!item.profile_id ? 'unlinked' : ''}>{item.profile_id ? studentAccounts.find((account) => account.id === item.profile_id)?.email || '연결됨' : '미연결'}</span><span className={item.guardians.length === 0 ? 'unlinked' : ''}>{item.guardians.length ? item.guardians.map((guardian) => parents.find((account) => account.id === guardian.parent_id)?.full_name).filter(Boolean).join(', ') : '미연결'}</span>
+      <button className="directory-name-button" onClick={() => setStudent(item)}>{item.full_name}</button><span>{item.grade}학년 · {item.class_name || '반 미정'}</span><span className={!item.profile_id ? 'unlinked' : ''}>{item.profile_id ? studentAccountById.get(item.profile_id)?.email || '연결됨' : '미연결'}</span><span className={item.guardians.length === 0 ? 'unlinked' : ''}>{item.guardians.length ? item.guardians.map((guardian) => parentById.get(guardian.parent_id)?.full_name).filter(Boolean).join(', ') : '미연결'}</span>
     </div>)}</div></>}
 
     {tab === 'parents' && <><FilterToolbar checked={unassignedOnly} onChange={setUnassignedOnly} label="자녀 미연결 부모만 보기" count={visibleParents.length}/><div className="directory-list directory-accounts"><div className="directory-head"><span>이름</span><span>아이디</span><span>연락처</span><span>연결된 자녀</span></div>{visibleParents.map((item) => <button className="directory-row directory-row-button" key={item.id} onClick={() => setParent(item)}><b>{item.full_name}</b><span>{item.email || '이메일 없음'}</span><span>{item.phone || '미입력'}</span><span className={childrenFor(item.id).length === 0 ? 'unlinked' : ''}>{childrenFor(item.id).map((child) => `${child.grade}학년 ${child.full_name}`).join(', ') || '미배정'}</span></button>)}</div></>}
