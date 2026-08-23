@@ -105,8 +105,8 @@ export function StudentManager({ initialStudents }: { initialStudents: Student[]
         {visibleStudents.map((student) => (
           <article className="student-row" key={student.id}>
             <span className={`student-grade-badge grade-${student.grade}`}>{student.grade}학년</span>
-            <b>{student.full_name}</b><span>{student.class_name ?? '미등록'}</span><span>{student.school_name ?? '미등록'}</span><span>{student.phone ?? '미등록'}</span>
-            <button onClick={() => openStudent(student)}>상세·수정</button>
+            <button type="button" className="student-name-button" onClick={() => openStudent(student)} aria-label={`${student.full_name} 상세정보 보기`}>{student.full_name}</button><span>{student.class_name ?? '미등록'}</span><span>{student.school_name ?? '미등록'}</span><span>{student.phone ?? '미등록'}</span>
+            <button type="button" onClick={() => openStudent(student)}>상세·수정</button>
           </article>
         ))}
         {visibleStudents.length === 0 && <p className="student-empty-row">해당 학년에 등록된 학생이 없습니다.</p>}
