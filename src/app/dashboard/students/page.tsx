@@ -16,6 +16,7 @@ export default async function StudentsPage() {
     supabase
       .from('students')
       .select('id, full_name, grade, class_name, phone, address, school_name, primary_parent_id, note, is_active')
+      .eq('is_active', true)
       .order('grade')
       .order('full_name'),
   ]);
@@ -25,11 +26,6 @@ export default async function StudentsPage() {
   return (
     <DashboardShell profile={{ full_name: profile.full_name, role: 'admin' }} activeHref="/dashboard/students">
           <Link href="/dashboard" className="back-home-button"><span aria-hidden="true">←</span> 홈으로</Link>
-          <div className="student-page-intro">
-            <div><p>STUDENT DIRECTORY</p><h1>학생명단관리</h1><span>드림어린이부 1~6학년 학생 정보를 확인하고 관리합니다.</span></div>
-            <strong>전체 {students?.length ?? 0}명</strong>
-          </div>
-
           {studentsError ? (
             <div className="student-load-error">학생 명단을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.</div>
           ) : (

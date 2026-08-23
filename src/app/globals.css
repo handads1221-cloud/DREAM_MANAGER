@@ -306,6 +306,7 @@ button { color: inherit; }
 .student-page-intro h1 { margin: 0; font-size: clamp(30px, 4vw, 43px); letter-spacing: -.055em; }
 .student-page-intro div > span { display: block; margin-top: 9px; color: var(--muted); font-size: 13px; }
 .student-page-intro > strong { flex: 0 0 auto; padding: 11px 15px; border-radius: 99px; background: #24332e; color: #fff; font-size: 12px; }
+.student-heading-actions { display: flex; align-items: center; gap: 9px; }.student-heading-actions strong { padding: 11px 15px; border-radius: 99px; background: #24332e; color: #fff; font-size: 12px; white-space: nowrap; }.student-heading-actions button { min-height: 40px; padding: 0 16px; border: 0; border-radius: 12px; background: var(--mint); color: #fff; font-size: 12px; font-weight: 850; cursor: pointer; white-space: nowrap; }
 .student-filter { display: flex; gap: 8px; overflow-x: auto; padding: 7px; border: 1px solid var(--line); border-radius: 16px; background: #fff; scrollbar-width: thin; }
 .student-filter button { flex: 1 0 auto; min-width: 88px; padding: 11px 12px; border: 0; border-radius: 11px; background: transparent; color: #6f7975; font-size: 12px; font-weight: 800; cursor: pointer; }
 .student-filter button span { margin-left: 4px; color: #9ba39f; font-size: 10px; }
@@ -317,6 +318,7 @@ button { color: inherit; }
 .student-list-heading span { color: var(--mint); font-size: 12px; font-weight: 800; }
 .student-list-heading p { margin: 0; color: var(--muted); font-size: 11px; }
 .student-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.student-table { overflow: hidden; border: 1px solid var(--line); border-radius: 18px; background: #fff; }.student-table-head,.student-row { display: grid; grid-template-columns: 90px minmax(100px,1fr) minmax(90px,.8fr) minmax(120px,1.2fr) minmax(120px,1fr) 100px; gap: 12px; align-items: center; }.student-table-head { padding: 11px 18px; background: #f3f7f4; color: #77827e; font-size: 10px; font-weight: 800; }.student-row { min-height: 58px; padding: 9px 18px; border-top: 1px solid var(--line); font-size: 12px; }.student-row:hover { background: #fbfdfc; }.student-row > span:not(.student-grade-badge) { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }.student-grade-badge { width: fit-content; padding: 7px 9px; border-radius: 99px; background: var(--mint-soft); color: #087b57; font-size: 10px; font-weight: 850; }.student-row button { min-height: 35px; border: 0; border-radius: 9px; background: #eef5f1; color: #31584b; font-size: 10px; font-weight: 800; cursor: pointer; }.student-empty-row { margin: 0; padding: 35px; color: var(--muted); text-align: center; font-size: 12px; }
 .student-card { min-width: 0; padding: 17px; display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 12px; border: 1px solid var(--line); border-radius: 18px; background: #fff; transition: transform .16s ease, border-color .16s ease; }
 .student-card:hover { transform: translateY(-2px); border-color: #b6ddcf; }
 .student-avatar { width: 46px; height: 46px; display: grid; place-items: center; border-radius: 15px; font-weight: 900; }
@@ -341,6 +343,7 @@ button { color: inherit; }
 .student-modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px; }
 .student-modal-actions button { min-width: 100px; padding: 12px 15px; border: 0; border-radius: 11px; background: var(--mint); color: #fff; font-size: 12px; font-weight: 850; cursor: pointer; }
 .student-modal-actions button.secondary { border: 1px solid var(--line); background: #fff; color: #68736e; }
+.student-modal-actions button.danger { margin-right: auto; background: #fff0ef; color: #a7443d; }
 .student-modal-actions button:disabled { opacity: .55; cursor: wait; }
 .student-form-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 13px; }
 .student-form-grid label { display: grid; gap: 6px; }
@@ -354,7 +357,7 @@ button { color: inherit; }
 .student-form-message.success { background: var(--mint-soft); color: #087b57; }.student-form-message.error { background: #fff0ef; color: #a7443d; }
 .student-load-error { padding: 25px; border-radius: 16px; background: #fff0ef; color: #a7443d; text-align: center; font-size: 13px; }
 @media (max-width: 800px) {
-  .student-grid { grid-template-columns: repeat(2, 1fr); }
+  .student-table { overflow-x: auto; }.student-table-head,.student-row { min-width: 700px; }
   .student-page-header > div span { display: none; }
   .student-page-content { padding: 28px 18px 110px; }
   .student-mobile-nav .student-mobile-main { justify-self: center; width: 54px; height: 54px; display: grid; place-items: center; border-radius: 18px; background: var(--mint); color: #fff; font-size: 23px; box-shadow: 0 8px 20px rgba(22,183,131,.28); transform: translateY(-14px); }
@@ -365,7 +368,7 @@ button { color: inherit; }
   .student-brand span { display: none; }
   .student-page-header > div a { padding: 8px 10px; font-size: 10px; }
   .student-page-content { padding-top: 28px; }
-  .student-page-intro { align-items: flex-start; }
+  .student-page-intro { align-items: flex-start; flex-direction: column; }.student-heading-actions { width: 100%; }.student-heading-actions button { flex: 1; }
   .student-page-intro div > span { max-width: 230px; line-height: 1.5; }
   .student-list-heading p { display: none; }
   .student-grid { grid-template-columns: 1fr; }

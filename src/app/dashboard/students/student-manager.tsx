@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState, useTransition } from 'react';
-import { updateStudent } from './actions';
+import { createStudent, deleteStudent, updateStudent } from './actions';
 import type { Student } from './types';
 
 const emptyLabel = '미등록';
@@ -10,6 +10,7 @@ export function StudentManager({ initialStudents }: { initialStudents: Student[]
   const [students, setStudents] = useState(initialStudents);
   const [grade, setGrade] = useState<number | 'all'>('all');
   const [selected, setSelected] = useState<Student | null>(null);
+  const [adding, setAdding] = useState(false);
   const [editing, setEditing] = useState(false);
   const [message, setMessage] = useState<{ kind: 'success' | 'error'; text: string } | null>(null);
   const [pending, startTransition] = useTransition();
@@ -35,8 +36,32 @@ export function StudentManager({ initialStudents }: { initialStudents: Student[]
   const closeModal = () => {
     if (pending) return;
     setSelected(null);
+    setAdding(false);
     setEditing(false);
     setMessage(null);
+  };
+
+  const submitCreate = (formData: FormData) => {
+    startTransition(async () => {
+      const result = await createStudent(formData);
+      if (!result.ok) { setMessage({ kind: 'error', text: result.message }); return; }
+      setStudents((current) => [...current, result.student].sort((a, b) => a.grade - b.grade || a.full_name.localeCompare(b.full_name, 'ko')));
+      setAdding(false);
+      setSelected(result.student);
+      setEditing(false);
+      setMessage({ kind: 'success', text: result.message });
+    });
+  };
+
+  const submitDelete = () => {
+    if (!selected || !window.confirm(`${selected.full_name} 학생을 현재 명단에서 삭제할까요?\n출석·보석 기록은 보존됩니다.`)) return;
+    const formData = new FormData(); formData.set('id', selected.id);
+    startTransition(async () => {
+      const result = await deleteStudent(formData);
+      if (!result.ok) { setMessage({ kind: 'error', text: result.message }); return; }
+      setStudents((current) => current.filter((student) => student.id !== selected.id));
+      setSelected(null); setEditing(false); setMessage(null);
+    });
   };
 
   const submitUpdate = (formData: FormData) => {
@@ -55,6 +80,10 @@ export function StudentManager({ initialStudents }: { initialStudents: Student[]
 
   return (
     <>
+      <div className="student-page-intro">
+        <div><p>STUDENT DIRECTORY</p><h1>학생명단관리</h1><span>드림어린이부 1~6학년 학생 정보를 확인하고 관리합니다.</span></div>
+        <div className="student-heading-actions"><strong>전체 {students.length}명</strong><button onClick={() => { setAdding(true); setSelected(null); setMessage(null); }}>＋ 학생 추가</button></div>
+      </div>
       <section className="student-filter" aria-label="학년별 학생 명단 필터">
         <button className={grade === 'all' ? 'active' : ''} onClick={() => setGrade('all')}>
           전체 <span>{students.length}</span>
@@ -71,19 +100,40 @@ export function StudentManager({ initialStudents }: { initialStudents: Student[]
         <p>학생을 선택하면 등록된 상세정보를 확인하고 수정할 수 있습니다.</p>
       </div>
 
-      <section className="student-grid" aria-live="polite">
+      <section className="student-table" aria-live="polite">
+        <div className="student-table-head"><span>학년</span><span>이름</span><span>반</span><span>학교</span><span>연락처</span><span>관리</span></div>
         {visibleStudents.map((student) => (
-          <article className="student-card" key={student.id}>
-            <div className={`student-avatar grade-${student.grade}`}>{student.full_name.slice(-1)}</div>
-            <div className="student-summary">
-              <span>{student.grade}학년 {student.class_name ?? '반 미정'}</span>
-              <h2>{student.full_name}</h2>
-              <p>{student.school_name ?? '학교 미등록'} · {student.is_active ? '재학' : '비활성'}</p>
-            </div>
-            <button onClick={() => openStudent(student)}>상세정보 보기</button>
+          <article className="student-row" key={student.id}>
+            <span className={`student-grade-badge grade-${student.grade}`}>{student.grade}학년</span>
+            <b>{student.full_name}</b><span>{student.class_name ?? '미등록'}</span><span>{student.school_name ?? '미등록'}</span><span>{student.phone ?? '미등록'}</span>
+            <button onClick={() => openStudent(student)}>상세·수정</button>
           </article>
         ))}
+        {visibleStudents.length === 0 && <p className="student-empty-row">해당 학년에 등록된 학생이 없습니다.</p>}
       </section>
+
+      {adding && (
+        <div className="student-modal-backdrop" onMouseDown={(event) => event.target === event.currentTarget && closeModal()}>
+          <section className="student-modal" role="dialog" aria-modal="true" aria-labelledby="student-add-title">
+            <button className="student-modal-close" onClick={closeModal} aria-label="학생 추가 닫기">×</button>
+            <div className="student-modal-title"><div className="student-avatar grade-1">＋</div><div><span>NEW STUDENT</span><h2 id="student-add-title">학생 추가</h2></div></div>
+            {message && <p className={`student-form-message ${message.kind}`} role="status">{message.text}</p>}
+            <form action={submitCreate} className="student-edit-form">
+              <div className="student-form-grid">
+                <label><span>이름 *</span><input name="full_name" required maxLength={50} autoFocus /></label>
+                <label><span>학년 *</span><select name="grade" defaultValue="1">{[1,2,3,4,5,6].map((item) => <option key={item} value={item}>{item}학년</option>)}</select></label>
+                <label><span>반 이름</span><input name="class_name" placeholder="예: 사랑반" /></label>
+                <label><span>연락처</span><input name="phone" inputMode="tel" placeholder="010-0000-0000" /></label>
+                <label className="wide"><span>주소</span><input name="address" /></label>
+                <label><span>학교명</span><input name="school_name" /></label>
+                <label><span>부모 계정 ID</span><input name="primary_parent_id" placeholder="추후 연결 가능" /></label>
+                <label className="wide"><span>비고</span><textarea name="note" rows={3} /></label>
+              </div>
+              <div className="student-modal-actions"><button type="button" className="secondary" onClick={closeModal} disabled={pending}>취소</button><button type="submit" disabled={pending}>{pending ? '추가 중…' : '학생 추가'}</button></div>
+            </form>
+          </section>
+        </div>
+      )}
 
       {selected && (
         <div className="student-modal-backdrop" onMouseDown={(event) => event.target === event.currentTarget && closeModal()}>
@@ -128,6 +178,7 @@ export function StudentManager({ initialStudents }: { initialStudents: Student[]
                   <div className="wide"><dt>비고</dt><dd>{selected.note ?? emptyLabel}</dd></div>
                 </dl>
                 <div className="student-modal-actions">
+                  <button type="button" className="danger" onClick={submitDelete} disabled={pending}>명단에서 삭제</button>
                   <button type="button" className="secondary" onClick={closeModal}>닫기</button>
                   <button type="button" onClick={() => { setEditing(true); setMessage(null); }}>수정하기</button>
                 </div>

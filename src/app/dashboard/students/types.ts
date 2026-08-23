@@ -14,3 +14,6 @@ export type Student = {
 export type UpdateStudentResult =
   | { ok: true; student: Student; message: string }
   | { ok: false; message: string };
+
+export type CreateStudentResult = UpdateStudentResult;
+export type DeleteStudentResult = { ok: boolean; message: string; id?: string };
