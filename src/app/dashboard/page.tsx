@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { DashboardShell, type AppRole } from './dashboard-shell';
-import { signOut } from './actions';
+import { signOut, switchActiveRole } from './actions';
 
 const roleCopy: Record<AppRole, { eyebrow: string; title: string; description: string }> = {
   admin: { eyebrow: 'ADMIN HOME', title: '드림어린이부 운영을 한눈에', description: '가입 승인, 학생명단, 출석과 보석 현황을 관리합니다.' },
@@ -25,6 +25,8 @@ export default async function DashboardPage() {
   }
 
   const role = profile.role as AppRole;
+  const { data: assignedRoleRows } = await supabase.from('user_roles').select('role').eq('user_id', userId);
+  const assignedRoles = (assignedRoleRows ?? []).map((row) => row.role as AppRole);
   const copy = roleCopy[role];
   let stats: { label: string; value: string; href: string; tone: string }[];
   if (role === 'admin') {
@@ -51,6 +53,7 @@ export default async function DashboardPage() {
   }
 
   return <DashboardShell profile={{ full_name: profile.full_name, role }}>
+    {assignedRoles.length > 1 && <form action={switchActiveRole} className="role-switcher"><span>화면 전환</span>{assignedRoles.map((assignedRole) => <button key={assignedRole} type="submit" name="role" value={assignedRole} className={role === assignedRole ? 'active' : ''} disabled={role === assignedRole}>{assignedRole === 'admin' ? '관리자' : assignedRole === 'teacher' ? '선생님' : assignedRole === 'parent' ? '부모님' : '학생'}</button>)}</form>}
     <div className="operation-welcome"><div><p>{copy.eyebrow}</p><h1>{profile.full_name}님, 반가워요</h1><span>{copy.description}</span></div><div className={`role-home-badge ${role}`}>{copy.title}</div></div>
     <section className="operation-stat-grid">{stats.map((stat) => <Link key={stat.label} href={stat.href} className={`operation-stat ${stat.tone}`}><span>{stat.label}</span><strong>{stat.value}</strong><small>자세히 보기 →</small></Link>)}</section>
     <section className="role-home-panel"><div><p className="eyebrow">QUICK START</p><h2>{copy.title}</h2><span>현재 계정 권한에 맞는 기능만 표시됩니다.</span></div><div className="role-quick-links">

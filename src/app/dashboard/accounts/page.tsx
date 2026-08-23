@@ -5,7 +5,8 @@ import { DashboardShell } from '../dashboard-shell';
 import { approveRegistration, rejectRegistration, restoreAccount, setAccountPassword, updateAccountRole, updateTeacherPhoto, withdrawAccount } from './actions';
 
 const roleLabel: Record<string, string> = { admin: '관리자', teacher: '선생님', parent: '부모님', student: '학생' };
-const RoleOptions = () => <><option value="parent">부모님</option><option value="student">학생</option><option value="teacher">선생님</option><option value="admin">관리자</option></>;
+const roleOrder = ['parent', 'student', 'teacher', 'admin'] as const;
+const RoleChecks = ({ selected = ['parent'], disabled = false }: { selected?: string[]; disabled?: boolean }) => <fieldset className="role-checks"><legend>계정 권한 (복수 선택)</legend>{roleOrder.map((role) => <label key={role}><input type="checkbox" name="roles" value={role} defaultChecked={selected.includes(role)} disabled={disabled} />{roleLabel[role]}</label>)}</fieldset>;
 
 export default async function AccountsPage({ searchParams }: PageProps<'/dashboard/accounts'>) {
   const params = await searchParams;
@@ -17,16 +18,19 @@ export default async function AccountsPage({ searchParams }: PageProps<'/dashboa
   const currentUserId = data.claims.sub;
   const { data: profile } = await supabase.from('profiles').select('full_name, role, is_active').eq('id', currentUserId).maybeSingle();
   if (!profile || profile.role !== 'admin' || !profile.is_active) redirect('/dashboard');
-  const [{ data: requests }, { data: accounts }] = await Promise.all([
+  const [{ data: requests }, { data: accounts }, { data: assignedRoles }] = await Promise.all([
     supabase.from('registration_requests').select('user_id, email, full_name, phone, address, note, status, requested_at').order('requested_at', { ascending: false }),
     supabase.from('profiles').select('id, email, full_name, role, phone, is_active, account_status, withdrawn_at, withdrawal_note, photo_path').order('full_name'),
+    supabase.from('user_roles').select('user_id, role'),
   ]);
   const requestRows = requests ?? [];
   const pending = requestRows.filter((request) => request.status === 'pending');
   const reviewed = requestRows.filter((request) => request.status !== 'pending');
   const activeAccounts = (accounts ?? []).filter((account) => account.account_status !== 'withdrawn' && account.is_active);
   const withdrawnAccounts = (accounts ?? []).filter((account) => account.account_status === 'withdrawn' || !account.is_active);
-  const teacherPhotos = new Map(await Promise.all(activeAccounts.filter((account) => account.role === 'teacher' && account.photo_path).map(async (account) => {
+  const rolesByUser = new Map<string, string[]>();
+  for (const row of assignedRoles ?? []) rolesByUser.set(row.user_id, [...(rolesByUser.get(row.user_id) ?? []), row.role]);
+  const teacherPhotos = new Map(await Promise.all(activeAccounts.filter((account) => rolesByUser.get(account.id)?.includes('teacher') && account.photo_path).map(async (account) => {
     const { data: signed } = await supabase.storage.from('face-photos').createSignedUrl(account.photo_path!, 3600);
     return [account.id, signed?.signedUrl ?? ''] as const;
   })));
@@ -37,12 +41,12 @@ export default async function AccountsPage({ searchParams }: PageProps<'/dashboa
     <section className="approval-section"><h2>가입 승인 대기</h2>{pending.length === 0 ? <div className="account-empty">현재 승인 대기 중인 가입 신청이 없습니다.</div> : <div className="approval-list">{pending.map((request) => <article key={request.user_id} className="approval-card">
       <div className="approval-person"><span>{request.full_name.slice(0, 1)}</span><div><h3>{request.full_name}</h3><p>{request.email}</p></div></div>
       <dl><div><dt>연락처</dt><dd>{request.phone || '미입력'}</dd></div><div><dt>주소</dt><dd>{request.address || '미입력'}</dd></div>{request.note && <div><dt>비고</dt><dd>{request.note}</dd></div>}</dl>
-      <div className="approval-actions"><form action={approveRegistration}><input type="hidden" name="user_id" value={request.user_id} /><select name="role" aria-label={`${request.full_name} 권한`} defaultValue="parent"><RoleOptions /></select><button type="submit">승인하고 권한 부여</button></form><form action={rejectRegistration}><input type="hidden" name="user_id" value={request.user_id} /><button type="submit" className="reject">반려</button></form></div>
+      <div className="approval-actions"><form action={approveRegistration}><input type="hidden" name="user_id" value={request.user_id} /><RoleChecks /><button type="submit">승인하고 권한 부여</button></form><form action={rejectRegistration}><input type="hidden" name="user_id" value={request.user_id} /><button type="submit" className="reject">반려</button></form></div>
     </article>)}</div>}</section>
     <section className="account-management-section"><div className="section-title-row"><div><h2>활성 계정</h2><p>권한과 비밀번호를 관리합니다.</p></div><b>{activeAccounts.length}개</b></div><div className="managed-account-list">{activeAccounts.map((account) => <article key={account.id} className="managed-account-card">
-      <div className="managed-account-person">{teacherPhotos.get(account.id) ? <Image className="managed-face-photo" src={teacherPhotos.get(account.id)!} alt={`${account.full_name} 얼굴 사진`} width={48} height={48} /> : <span>{account.full_name.slice(0, 1)}</span>}<div><h3>{account.full_name}</h3><p>{account.email ?? '이메일 정보 없음'} · {account.phone || '연락처 미입력'}</p></div><b className={`account-role ${account.role}`}>{roleLabel[account.role] ?? account.role}</b></div>
-      {account.role === 'teacher' && <form action={updateTeacherPhoto} className="teacher-photo-form"><input type="hidden" name="user_id" value={account.id} /><label><span>선생님 얼굴 사진</span><input type="file" name="photo" accept="image/jpeg,image/png,image/webp" required /></label><button type="submit">사진 저장</button></form>}
-      <div className="managed-account-actions"><form action={updateAccountRole}><input type="hidden" name="user_id" value={account.id} /><select name="role" defaultValue={account.role} aria-label={`${account.full_name} 권한 변경`} disabled={account.id === currentUserId}><RoleOptions /></select><button type="submit" disabled={account.id === currentUserId}>권한 변경</button></form>
+      <div className="managed-account-person">{teacherPhotos.get(account.id) ? <Image className="managed-face-photo" src={teacherPhotos.get(account.id)!} alt={`${account.full_name} 얼굴 사진`} width={48} height={48} /> : <span>{account.full_name.slice(0, 1)}</span>}<div><h3>{account.full_name}</h3><p>{account.email ?? '이메일 정보 없음'} · {account.phone || '연락처 미입력'}</p></div><div className="account-role-list">{(rolesByUser.get(account.id) ?? [account.role]).map((role) => <b key={role} className={`account-role ${role}`}>{roleLabel[role]}</b>)}</div></div>
+      {rolesByUser.get(account.id)?.includes('teacher') && <form action={updateTeacherPhoto} className="teacher-photo-form"><input type="hidden" name="user_id" value={account.id} /><label><span>선생님 얼굴 사진</span><input type="file" name="photo" accept="image/jpeg,image/png,image/webp" required /></label><button type="submit">사진 저장</button></form>}
+      <div className="managed-account-actions"><form action={updateAccountRole}><input type="hidden" name="user_id" value={account.id} /><RoleChecks selected={rolesByUser.get(account.id) ?? [account.role]} disabled={account.id === currentUserId} /><button type="submit" disabled={account.id === currentUserId}>권한 변경</button></form>
       {account.id !== currentUserId && <details className="password-admin"><summary>비밀번호 직접 변경</summary><form action={setAccountPassword}><input type="hidden" name="user_id" value={account.id} /><label><span>새 비밀번호</span><input name="new_password" type="password" minLength={8} placeholder="8자 이상" required /></label><label><span>새 비밀번호 확인</span><input name="new_password_confirm" type="password" minLength={8} placeholder="한 번 더 입력" required /></label><p>메일은 발송되지 않으며 변경 즉시 기존 로그인 세션이 종료됩니다.</p><button type="submit">새 비밀번호 적용</button></form></details>}
       {account.id !== currentUserId && <details className="withdraw-account"><summary>탈퇴 처리</summary><form action={withdrawAccount}><input type="hidden" name="user_id" value={account.id} /><input name="withdrawal_note" maxLength={200} placeholder="탈퇴 사유 (선택)" /><p>로그인만 차단되며 기존 데이터는 삭제되지 않습니다.</p><button type="submit">탈퇴 계정으로 전환</button></form></details>}</div>
     </article>)}{activeAccounts.length === 0 && <div className="account-empty">활성 계정이 없습니다.</div>}</div></section>

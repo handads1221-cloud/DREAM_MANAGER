@@ -21,8 +21,8 @@ export async function linkStudentAccount(formData: FormData) {
   const studentId = String(formData.get('student_id') ?? '');
   const profileId = String(formData.get('profile_id') ?? '') || null;
   if (profileId) {
-    const { data: profile } = await supabase.from('profiles').select('role').eq('id', profileId).maybeSingle();
-    if (profile?.role !== 'student') relationshipRedirect('error', '학생 권한 계정만 연결할 수 있습니다.');
+    const { data: assignedRole } = await supabase.from('user_roles').select('role').eq('user_id', profileId).eq('role', 'student').maybeSingle();
+    if (!assignedRole) relationshipRedirect('error', '학생 권한 계정만 연결할 수 있습니다.');
   }
   const { data: student } = await supabase.from('students').select('full_name').eq('id', studentId).maybeSingle();
   if (!student) relationshipRedirect('error', '연결할 학생을 찾을 수 없습니다.');
@@ -37,8 +37,8 @@ export async function createAndLinkStudent(formData: FormData) {
   const profileId = String(formData.get('profile_id') ?? '');
   const grade = Number(formData.get('grade'));
   if (!profileId || !Number.isInteger(grade) || grade < 1 || grade > 6) relationshipRedirect('error', '학생 계정과 학년을 확인해 주세요.');
-  const { data: profile } = await supabase.from('profiles').select('full_name, role').eq('id', profileId).maybeSingle();
-  if (!profile || profile.role !== 'student') relationshipRedirect('error', '학생 권한 계정을 찾을 수 없습니다.');
+  const [{ data: profile }, { data: assignedRole }] = await Promise.all([supabase.from('profiles').select('full_name').eq('id', profileId).maybeSingle(), supabase.from('user_roles').select('role').eq('user_id', profileId).eq('role', 'student').maybeSingle()]);
+  if (!profile || !assignedRole) relationshipRedirect('error', '학생 권한 계정을 찾을 수 없습니다.');
   const { error } = await supabase.from('students').insert({ full_name: profile.full_name, grade, profile_id: profileId, is_active: true });
   if (error) relationshipRedirect('error', error.code === '23505' ? '이미 학생 명단에 연결된 계정입니다.' : `학생 명단을 생성하지 못했습니다. (${error.message})`);
   revalidatePath('/dashboard/relationships');
@@ -51,8 +51,8 @@ export async function linkParent(formData: FormData) {
   const studentId = String(formData.get('student_id') ?? '');
   const parentId = String(formData.get('parent_id') ?? '');
   const relationship = String(formData.get('relationship') ?? '').trim() || '보호자';
-  const { data: parent } = await supabase.from('profiles').select('role').eq('id', parentId).maybeSingle();
-  if (parent?.role !== 'parent') return;
+  const { data: parentRole } = await supabase.from('user_roles').select('role').eq('user_id', parentId).eq('role', 'parent').maybeSingle();
+  if (!parentRole) return;
   await supabase.from('student_guardians').upsert({ student_id: studentId, parent_id: parentId, relationship, is_primary: true });
   await supabase.from('students').update({ primary_parent_id: parentId }).eq('id', studentId);
   revalidatePath('/dashboard/relationships');
@@ -63,8 +63,8 @@ export async function assignTeacher(formData: FormData) {
   const teacherId = String(formData.get('teacher_id') ?? '');
   const grade = Number(formData.get('grade'));
   const className = String(formData.get('class_name') ?? '').trim() || '전체';
-  const { data: teacher } = await supabase.from('profiles').select('role').eq('id', teacherId).maybeSingle();
-  if (teacher?.role !== 'teacher' || grade < 1 || grade > 6) return;
+  const { data: teacherRole } = await supabase.from('user_roles').select('role').eq('user_id', teacherId).eq('role', 'teacher').maybeSingle();
+  if (!teacherRole || grade < 1 || grade > 6) return;
   await supabase.from('teacher_assignments').upsert({ teacher_id: teacherId, grade, class_name: className, school_year: new Date().getFullYear() });
   revalidatePath('/dashboard/relationships');
 }

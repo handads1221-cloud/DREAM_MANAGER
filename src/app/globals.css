@@ -52,6 +52,11 @@ button { color: inherit; }
 .role-switcher > span { padding: 0 8px; color: var(--muted); font-size: 10px; font-weight: 750; }
 .role-switcher button { border: 0; border-radius: 9px; padding: 7px 11px; background: transparent; color: #6e7773; font-size: 11px; font-weight: 750; cursor: pointer; }
 .role-switcher button.active { background: #24332e; color: white; box-shadow: 0 5px 12px rgba(36,51,46,.14); }
+.role-checks { display: flex; flex-wrap: wrap; gap: 8px 13px; margin: 0; padding: 10px 12px; border: 1px solid var(--line); border-radius: 11px; }
+.role-checks legend { padding: 0 5px; color: var(--muted); font-size: 10px; font-weight: 800; }
+.role-checks label { display: flex; align-items: center; gap: 5px; color: #42514c; font-size: 11px; font-weight: 800; }
+.role-checks input { accent-color: var(--mint); }
+.account-role-list { margin-left: auto; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 5px; }
 .hero-card { position: relative; height: 300px; border-radius: 28px; overflow: hidden; color: #fff; box-shadow: 0 20px 60px rgba(28,48,40,.16); }
 .hero-card > img { width: 100%; height: 100%; object-fit: cover; object-position: center 47%; }
 .hero-overlay { position: absolute; inset: 0; background: linear-gradient(90deg, rgba(13,39,31,.88) 0%, rgba(13,39,31,.4) 50%, rgba(13,39,31,.08) 100%); }

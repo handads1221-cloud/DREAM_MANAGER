@@ -9,13 +9,16 @@ export default async function RelationshipsPage({ searchParams }: PageProps<'/da
   const supabase = await createClient(); const { data } = await supabase.auth.getClaims(); if (!data?.claims?.sub) redirect('/login');
   const { data: profile } = await supabase.from('profiles').select('full_name, role, is_active').eq('id', data.claims.sub).maybeSingle();
   if (!profile || profile.role !== 'admin' || !profile.is_active) redirect('/dashboard');
-  const [{ data: students }, { data: accounts }, { data: guardians }, { data: assignments }] = await Promise.all([
+  const [{ data: students }, { data: accounts }, { data: accountRoles }, { data: guardians }, { data: assignments }] = await Promise.all([
     supabase.from('students').select('id, full_name, grade, class_name, profile_id, primary_parent_id').eq('is_active', true).order('grade').order('full_name'),
-    supabase.from('profiles').select('id, full_name, email, role').in('role', ['student', 'parent', 'teacher']).eq('is_active', true).order('full_name'),
+    supabase.from('profiles').select('id, full_name, email, role').eq('is_active', true).order('full_name'),
+    supabase.from('user_roles').select('user_id, role').in('role', ['student', 'parent', 'teacher']),
     supabase.from('student_guardians').select('student_id, parent_id, relationship'),
     supabase.from('teacher_assignments').select('teacher_id, grade, class_name, school_year').eq('school_year', new Date().getFullYear()),
   ]);
-  const studentAccounts = (accounts ?? []).filter(a => a.role === 'student'); const parents = (accounts ?? []).filter(a => a.role === 'parent'); const teachers = (accounts ?? []).filter(a => a.role === 'teacher');
+  const idsForRole = (role: string) => new Set((accountRoles ?? []).filter((row) => row.role === role).map((row) => row.user_id));
+  const studentIds = idsForRole('student'); const parentIds = idsForRole('parent'); const teacherIds = idsForRole('teacher');
+  const studentAccounts = (accounts ?? []).filter(a => studentIds.has(a.id)); const parents = (accounts ?? []).filter(a => parentIds.has(a.id)); const teachers = (accounts ?? []).filter(a => teacherIds.has(a.id));
   const linkedStudentAccountIds = new Set((students ?? []).map(s => s.profile_id).filter(Boolean)); const unlinkedStudentAccounts = studentAccounts.filter(a => !linkedStudentAccountIds.has(a.id));
   const accountName = new Map((accounts ?? []).map(a => [a.id, a.full_name]));
   return <DashboardShell profile={{ full_name: profile.full_name, role: 'admin' }} activeHref="/dashboard/relationships">
