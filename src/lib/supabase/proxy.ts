@@ -2,6 +2,12 @@ import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
 export async function updateSession(request: NextRequest) {
+  // Public auth pages do not need an existing session. Skipping the refresh here
+  // also prevents a stale refresh-token cookie from delaying a new sign-in.
+  if (request.nextUrl.pathname === '/login' || request.nextUrl.pathname === '/signup') {
+    return NextResponse.next({ request });
+  }
+
   let response = NextResponse.next({ request });
 
   const supabase = createServerClient(
@@ -27,4 +33,3 @@ export async function updateSession(request: NextRequest) {
   await supabase.auth.getClaims();
   return response;
 }
-

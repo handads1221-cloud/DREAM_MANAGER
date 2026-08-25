@@ -29,7 +29,10 @@ export default async function DashboardPage() {
   const { data, error } = await supabase.auth.getClaims();
   if (error || !data?.claims?.sub) redirect('/login');
   const userId = data.claims.sub;
-  const { data: profile } = await supabase.from('profiles').select('full_name, role, grade, class_name, is_active, account_status').eq('id', userId).maybeSingle();
+  const [{ data: profile }, { data: assignedRoleRows }] = await Promise.all([
+    supabase.from('profiles').select('full_name, role, grade, class_name, is_active, account_status').eq('id', userId).maybeSingle(),
+    supabase.from('user_roles').select('role').eq('user_id', userId),
+  ]);
 
   if (!profile || !profile.is_active) {
     const { data: request } = await supabase.from('registration_requests').select('full_name, status').eq('user_id', userId).maybeSingle();
@@ -38,7 +41,6 @@ export default async function DashboardPage() {
   }
 
   const role = profile.role as AppRole;
-  const { data: assignedRoleRows } = await supabase.from('user_roles').select('role').eq('user_id', userId);
   const assignedRoles = (assignedRoleRows ?? []).map((row) => row.role as AppRole);
   const copy = roleCopy[role];
   let stats: { label: string; value: string; href: string; tone: string; detail?: string }[];

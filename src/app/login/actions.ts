@@ -10,11 +10,12 @@ export async function signIn(formData: FormData) {
     : `${loginId.toLowerCase()}@dream-manager.local`;
   const password = String(formData.get('password') ?? '');
   const supabase = await createClient();
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  const { data: authData, error } = await supabase.auth.signInWithPassword({ email, password });
 
   if (error) redirect(`/login?error=${encodeURIComponent('이메일 또는 비밀번호를 확인해 주세요.')}`);
-  const { data } = await supabase.auth.getClaims();
-  const userId = data?.claims?.sub;
+  // signInWithPassword already returns the authenticated user. Reusing it avoids
+  // an unnecessary second Auth/JWKS request on the login critical path.
+  const userId = authData.user?.id;
   if (userId) {
     const { data: profile } = await supabase.from('profiles').select('is_active, account_status').eq('id', userId).maybeSingle();
     if (profile?.account_status === 'withdrawn' || profile && !profile.is_active) {
