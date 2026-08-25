@@ -49,9 +49,17 @@ export default async function DashboardPage() {
     const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Seoul' }).format(new Date());
     const currentMonth = Number(new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Seoul', month: 'numeric' }).format(new Date()));
     const previousMonth = currentMonth === 1 ? 12 : currentMonth - 1;
+    const todayDate = new Date(`${today}T00:00:00Z`);
+    const latestSunday = new Date(todayDate);
+    latestSunday.setUTCDate(todayDate.getUTCDate() - todayDate.getUTCDay());
+    const sundayDates = Array.from({ length: 4 }, (_, index) => {
+      const sunday = new Date(latestSunday);
+      sunday.setUTCDate(latestSunday.getUTCDate() - (3 - index) * 7);
+      return sunday.toISOString().slice(0, 10);
+    });
     const [{ count: studentCount }, { data: events }, { data: studentBirthdays }, { data: teacherRoles }, { data: upcomingPlans }] = await Promise.all([
       supabase.from('students').select('*', { count: 'exact', head: true }).eq('is_active', true),
-      supabase.from('attendance_events').select('id, service_date').lte('service_date', today).order('service_date', { ascending: false }).limit(4),
+      supabase.from('attendance_events').select('id, service_date').gte('service_date', sundayDates[0]).lte('service_date', sundayDates[3]),
       supabase.from('students').select('full_name, birth_date').eq('is_active', true).not('birth_date', 'is', null),
       supabase.from('user_roles').select('user_id').eq('role', 'teacher'),
       supabase.from('weekly_plans').select('id,schedule_date,schedule_time,title').gte('schedule_date', today).order('schedule_date').order('schedule_time').limit(5),
@@ -62,9 +70,13 @@ export default async function DashboardPage() {
       eventIds.length ? supabase.from('attendance_records').select('event_id').in('event_id', eventIds).in('status', ['present','late']) : Promise.resolve({ data: [] }),
       teacherIds.length ? supabase.from('profiles').select('full_name, birth_date').in('id', teacherIds).eq('is_active', true).not('birth_date', 'is', null) : Promise.resolve({ data: [] }),
     ]);
-    const attendanceByEvent = new Map<string, number>();
-    for (const row of attendanceRows ?? []) attendanceByEvent.set(row.event_id, (attendanceByEvent.get(row.event_id) ?? 0) + 1);
-    const weeks = [...(events ?? [])].reverse().map((event, index, all) => ({ date: event.service_date, count: attendanceByEvent.get(event.id) ?? 0, current: index === all.length - 1 }));
+    const eventDates = new Map((events ?? []).map((event) => [event.id, event.service_date]));
+    const attendanceByDate = new Map<string, number>();
+    for (const row of attendanceRows ?? []) {
+      const serviceDate = eventDates.get(row.event_id);
+      if (serviceDate && sundayDates.includes(serviceDate)) attendanceByDate.set(serviceDate, (attendanceByDate.get(serviceDate) ?? 0) + 1);
+    }
+    const weeks = sundayDates.map((date, index) => ({ date, count: attendanceByDate.get(date) ?? 0, current: index === sundayDates.length - 1 }));
     const people = [...(studentBirthdays ?? []).map((item) => ({ name: item.full_name, role: '학생', date: item.birth_date! })), ...(teacherBirthdays ?? []).map((item) => ({ name: item.full_name, role: '선생님', date: item.birth_date! }))];
     const inMonth = (month: number) => people.filter((person) => Number(person.date.slice(5, 7)) === month).sort((a, b) => a.date.slice(5).localeCompare(b.date.slice(5)));
     const latest = weeks.at(-1);
