@@ -189,6 +189,7 @@ button { color: inherit; }
 .auth-form label { margin-top: 7px; font-size: 12px; font-weight: 800; }
 .auth-form input { width: 100%; height: 48px; border: 1px solid #dfe5e1; border-radius: 13px; padding: 0 15px; outline: none; background: #fbfcfb; }
 .auth-form input:focus { border-color: var(--mint); box-shadow: 0 0 0 3px rgba(22,183,131,.12); }
+.auth-form .remember-login { display: flex; align-items: center; gap: 10px; margin: 8px 0 0; color: #4c5954; cursor: pointer; }.auth-form .remember-login input { width: 18px; height: 18px; flex: 0 0 auto; padding: 0; accent-color: var(--mint); }.auth-form .remember-login span { display: grid; gap: 2px; }.auth-form .remember-login b { font-size: 11px; }.auth-form .remember-login small { color: var(--muted); font-size: 9px; font-weight: 500; }
 .auth-form button { height: 50px; margin-top: 13px; border: 0; border-radius: 14px; background: var(--mint); color: #fff; font-weight: 850; cursor: pointer; }
 .auth-help { display: block; margin-top: 22px; color: #929a96; line-height: 1.6; }
 .signup-link-button { display: grid; place-items: center; min-height: 46px; margin-top: 12px; border: 1px solid #b9ded0; border-radius: 13px; color: #087b57; text-decoration: none; font-size: 12px; font-weight: 850; }

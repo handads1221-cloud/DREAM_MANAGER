@@ -1,6 +1,7 @@
 'use server';
 
 import { redirect } from 'next/navigation';
+import { cookies } from 'next/headers';
 import { createClient } from '@/lib/supabase/server';
 
 export async function signIn(formData: FormData) {
@@ -9,6 +10,15 @@ export async function signIn(formData: FormData) {
     ? loginId.toLowerCase()
     : `${loginId.toLowerCase()}@dream-manager.local`;
   const password = String(formData.get('password') ?? '');
+  const rememberLogin = formData.get('rememberLogin') === 'on';
+  const cookieStore = await cookies();
+  cookieStore.set('dream-remember-login', rememberLogin ? '1' : '0', {
+    path: '/',
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: process.env.NODE_ENV === 'production',
+    ...(rememberLogin ? { maxAge: 60 * 60 * 24 * 365 } : {}),
+  });
   const supabase = await createClient();
   const { data: authData, error } = await supabase.auth.signInWithPassword({ email, password });
 

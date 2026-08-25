@@ -30,6 +30,7 @@ export default async function LoginPage({ searchParams }: PageProps<'/login'>) {
             <input id="loginId" name="loginId" type="text" autoComplete="username" placeholder="example@email.com" required />
             <label htmlFor="password">비밀번호</label>
             <input id="password" name="password" type="password" autoComplete="current-password" placeholder="비밀번호를 입력하세요" required />
+            <label className="remember-login" htmlFor="rememberLogin"><input id="rememberLogin" name="rememberLogin" type="checkbox"/><span><b>이 기기에서 로그인 유지</b><small>개인 기기에서만 선택해 주세요.</small></span></label>
             <button type="submit">로그인</button>
           </form>
           <Link href="/signup" className="signup-link-button">처음이신가요? 가입 신청하기</Link>
