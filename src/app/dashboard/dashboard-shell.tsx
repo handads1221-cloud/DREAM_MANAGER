@@ -18,7 +18,7 @@ const mobileMenus: Record<AppRole, MenuItem[]> = {
   admin: [menus.admin[0], menus.admin[1], menus.admin[3], menus.admin[4], menus.admin[7]],
   teacher: [menus.teacher[0], menus.teacher[2], menus.teacher[3], menus.teacher[4], menus.teacher[5]],
   parent: menus.parent,
-  student: menus.student,
+  student: [menus.student[0], menus.student[1], menus.student[4]],
 };
 
 export function DashboardShell({ profile, activeHref = '/dashboard', children }: { profile: { full_name: string; role: AppRole }; activeHref?: string; children: ReactNode }) {
@@ -30,6 +30,6 @@ export function DashboardShell({ profile, activeHref = '/dashboard', children }:
     </header>
     <div className="layout"><aside className="sidebar" aria-label={`${roleLabel[profile.role]} 메뉴`}><nav>{items.map((item) => <Link key={item.label} className={activeHref === item.href ? 'active' : ''} href={item.href}><span><AppIcon name={item.icon}/></span>{item.label}</Link>)}</nav><div className="sidebar-footer"><a className="band-shortcut" href={DREAM_BAND_URL} target="_blank" rel="noopener noreferrer" aria-label="드림어린이부 네이버밴드 새 창으로 열기"><b>B</b><span><strong>드림어린이부 밴드</strong><small>네이버밴드 바로가기 ↗</small></span></a><div className="sunday-card"><span>로그인 계정</span><strong>{profile.full_name} {roleLabel[profile.role]}</strong><small>계정 권한에 허용된 정보만 안전하게 표시됩니다.</small></div></div></aside><section className="content operation-content">{children}</section></div>
     <a className="mobile-band-shortcut" href={DREAM_BAND_URL} target="_blank" rel="noopener noreferrer" aria-label="드림어린이부 네이버밴드 새 창으로 열기"><b>B</b><span>밴드</span></a>
-    <nav className="mobile-nav operation-mobile-nav" aria-label={`${roleLabel[profile.role]} 모바일 바로가기`}>{mobileMenus[profile.role].map((item) => <Link key={item.label} className={activeHref === item.href ? 'active' : ''} href={item.href} aria-label={item.label}><span><AppIcon name={item.icon}/></span><small>{item.label.replace('게시판', '')}</small></Link>)}</nav>
+    <nav className={`mobile-nav operation-mobile-nav ${profile.role === 'student' ? 'student-mobile-nav' : ''}`} aria-label={`${roleLabel[profile.role]} 모바일 바로가기`}>{mobileMenus[profile.role].map((item) => <Link key={item.label} className={activeHref === item.href ? 'active' : ''} href={item.href} aria-label={item.label}><span><AppIcon name={item.icon}/></span><small>{item.label.replace('게시판', '')}</small></Link>)}</nav>
   </main>;
 }
