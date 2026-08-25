@@ -38,6 +38,7 @@ button { color: inherit; }
 .sidebar nav a { color: #707a76; text-decoration: none; padding: 13px 16px; border-radius: 14px; display: flex; align-items: center; gap: 13px; font-weight: 650; font-size: 14px; }
 .sidebar nav a span { width: 22px; display: grid; place-items: center; text-align: center; }.sidebar nav a svg { width: 20px; height: 20px; }
 .sidebar nav a.active { color: #087b57; background: var(--mint-soft); }
+.sidebar-footer { display: grid; gap: 10px; }.band-shortcut { display: flex; align-items: center; gap: 11px; padding: 12px 13px; border: 1px solid #bceec9; border-radius: 14px; background: #f0fff4; color: #176f34; text-decoration: none; transition: transform .15s ease,box-shadow .15s ease; }.band-shortcut:hover { transform: translateY(-1px); box-shadow: 0 8px 20px rgba(20,151,61,.12); }.band-shortcut>b,.mobile-band-shortcut>b { width: 34px; height: 34px; display: grid; place-items: center; flex: 0 0 auto; border-radius: 11px; background: #00c73c; color: #fff; font-size: 18px; font-weight: 950; }.band-shortcut>span { min-width: 0; display: grid; gap: 2px; }.band-shortcut strong { font-size: 12px; }.band-shortcut small { color: #62906f; font-size: 9px; }.mobile-band-shortcut { display: none; }
 .sunday-card { padding: 18px; border-radius: 18px; background: #24332e; color: white; display: grid; gap: 6px; box-shadow: 0 12px 30px rgba(36,51,46,.16); }
 .sunday-card span { font-size: 11px; color: #afd9ca; }
 .sunday-card strong { font-size: 14px; }
@@ -155,6 +156,7 @@ button { color: inherit; }
   .mobile-nav { position: fixed; display: grid; grid-template-columns: repeat(5,minmax(0,1fr)); align-items: stretch; left: 10px; right: 10px; bottom: max(10px,env(safe-area-inset-bottom)); min-height: 68px; padding: 6px; border-radius: 20px; background: rgba(255,255,255,.97); border: 1px solid var(--line); box-shadow: 0 12px 36px rgba(26,42,36,.16); backdrop-filter: blur(14px); z-index: 30; }
   .mobile-nav a { min-width: 0; min-height: 54px; padding: 5px 2px 4px; display: grid; grid-template-rows: 27px 15px; align-content: center; justify-items: center; gap: 1px; border-radius: 14px; color: #7d8984; text-decoration: none; }
   .mobile-nav a span { width: 25px; height: 25px; display: grid; place-items: center; }.mobile-nav a svg { width: 22px; height: 22px; }.mobile-nav a small { max-width: 100%; overflow: hidden; font-size: 9px; font-weight: 750; line-height: 15px; white-space: nowrap; text-overflow: ellipsis; }.mobile-nav a.active { background: var(--mint-soft); color: #087b57; }.mobile-nav a.active svg { stroke-width: 2.2; }
+  .mobile-band-shortcut { position: fixed; right: 16px; bottom: calc(max(10px,env(safe-area-inset-bottom)) + 78px); z-index: 31; display: flex; align-items: center; gap: 6px; padding: 6px 10px 6px 6px; border: 1px solid #bceec9; border-radius: 15px; background: rgba(255,255,255,.97); box-shadow: 0 8px 24px rgba(20,90,45,.16); color: #176f34; font-size: 10px; font-weight: 850; text-decoration: none; }.mobile-band-shortcut>b { width: 29px; height: 29px; border-radius: 9px; font-size: 15px; }
 }
 @media (max-width: 520px) {
   .role-switcher { width: 100%; overflow-x: auto; }
