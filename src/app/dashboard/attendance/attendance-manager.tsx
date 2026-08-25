@@ -8,7 +8,7 @@ type AttendanceRecord = { student_id: string; status: string; checked_at: string
 
 const statusLabel: Record<string, string> = { present: '출석', late: '지각', excused: '사유결석', absent: '결석' };
 
-export function AttendanceManager({ eventId, initialStudents, initialRecords }: { eventId: string; initialStudents: Student[]; initialRecords: AttendanceRecord[] }) {
+export function AttendanceManager({ eventId, serviceDate, initialStudents, initialRecords }: { eventId: string | null; serviceDate: string; initialStudents: Student[]; initialRecords: AttendanceRecord[] }) {
   const [grade, setGrade] = useState<number | 'all'>('all');
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [records, setRecords] = useState(() => new Map(initialRecords.map((record) => [record.student_id, record])));
@@ -16,6 +16,7 @@ export function AttendanceManager({ eventId, initialStudents, initialRecords }: 
   const [pending, startTransition] = useTransition();
   const visible = useMemo(() => grade === 'all' ? initialStudents : initialStudents.filter((student) => student.grade === grade), [grade, initialStudents]);
   const counts = useMemo(() => initialStudents.reduce<Record<number, number>>((all, student) => ({ ...all, [student.grade]: (all[student.grade] ?? 0) + 1 }), {}), [initialStudents]);
+  const presentCount = useMemo(() => [...records.values()].filter((record) => ['present','late'].includes(record.status)).length, [records]);
   const visibleIds = visible.map((student) => student.id); const allVisibleSelected = visibleIds.length > 0 && visibleIds.every((id) => selected.has(id));
 
   const toggle = (id: string) => setSelected((current) => { const next = new Set(current); if (next.has(id)) next.delete(id); else next.add(id); return next; });
@@ -23,7 +24,7 @@ export function AttendanceManager({ eventId, initialStudents, initialRecords }: 
   const runAction = (action: 'present' | 'cancel') => {
     if (selected.size === 0) { setFeedback({ kind: 'error', text: '처리할 학생을 한 명 이상 선택해 주세요.' }); return; }
     if (action === 'cancel' && !window.confirm(`선택한 ${selected.size}명의 출석을 취소할까요?`)) return;
-    const formData = new FormData(); formData.set('event_id', eventId); formData.set('attendance_action', action); selected.forEach((id) => formData.append('student_ids', id));
+    const formData = new FormData(); if (eventId) formData.set('event_id', eventId); formData.set('service_date', serviceDate); formData.set('attendance_action', action); selected.forEach((id) => formData.append('student_ids', id));
     startTransition(async () => {
       const result = await updateBulkAttendance(formData);
       if (!result.ok) { setFeedback({ kind: 'error', text: result.message }); return; }
@@ -33,6 +34,7 @@ export function AttendanceManager({ eventId, initialStudents, initialRecords }: 
   };
 
   return <section className="attendance-manager">
+    <div className="attendance-live-summary"><div><span>출석</span><strong>{presentCount}명</strong></div><div><span>미출석</span><strong>{Math.max(initialStudents.length - presentCount, 0)}명</strong></div><div><span>전체</span><strong>{initialStudents.length}명</strong></div></div>
     <div className="attendance-grade-filter"><button className={grade === 'all' ? 'active' : ''} onClick={() => { setGrade('all'); setSelected(new Set()); }}>전체 <span>{initialStudents.length}</span></button>{[1,2,3,4,5,6].map((item) => <button key={item} className={grade === item ? 'active' : ''} onClick={() => { setGrade(item); setSelected(new Set()); }}>{item}학년 <span>{counts[item] ?? 0}</span></button>)}</div>
     <div className="attendance-bulk-bar"><label><input type="checkbox" checked={allVisibleSelected} onChange={toggleAll}/> 현재 목록 전체선택</label><span>{selected.size}명 선택</span><button onClick={() => runAction('present')} disabled={pending || selected.size === 0}>선택 출석</button><button className="cancel" onClick={() => runAction('cancel')} disabled={pending || selected.size === 0}>선택 출석취소</button></div>
     {feedback && <p className={`form-alert ${feedback.kind}`}>{feedback.text}</p>}
