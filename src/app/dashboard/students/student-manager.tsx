@@ -129,6 +129,7 @@ export function StudentManager({ initialStudents }: { initialStudents: Student[]
                 <label className="wide"><span>주소</span><input name="address" /></label>
                 <label><span>학교명</span><input name="school_name" /></label>
                 <label><span>생년월일</span><input type="date" name="birth_date" min="1900-01-01" max={new Date().toISOString().slice(0, 10)} /></label>
+                <label><span>성별</span><select name="gender" defaultValue=""><option value="">선택 안 함</option><option value="male">남</option><option value="female">여</option></select></label>
                 <label className="wide"><span>얼굴 사진 (JPG·PNG·WEBP, 5MB 이하)</span><input type="file" name="photo" accept="image/jpeg,image/png,image/webp" /></label>
                 <label className="wide"><span>비고</span><textarea name="note" rows={3} /></label>
               </div>
@@ -160,6 +161,7 @@ export function StudentManager({ initialStudents }: { initialStudents: Student[]
                   <label className="wide"><span>주소</span><input name="address" defaultValue={selected.address ?? ''} /></label>
                   <label><span>학교명</span><input name="school_name" defaultValue={selected.school_name ?? ''} /></label>
                   <label><span>생년월일</span><input type="date" name="birth_date" min="1900-01-01" max={new Date().toISOString().slice(0, 10)} defaultValue={selected.birth_date ?? ''} /></label>
+                  <label><span>성별</span><select name="gender" defaultValue={selected.gender ?? ''}><option value="">선택 안 함</option><option value="male">남</option><option value="female">여</option></select></label>
                   <input type="hidden" name="primary_parent_id" value={selected.primary_parent_id ?? ''} />
                   <label className="wide"><span>얼굴 사진 변경 (JPG·PNG·WEBP, 5MB 이하)</span><input type="file" name="photo" accept="image/jpeg,image/png,image/webp" /></label>
                   <label className="wide"><span>비고</span><textarea name="note" defaultValue={selected.note ?? ''} rows={3} /></label>
@@ -180,6 +182,7 @@ export function StudentManager({ initialStudents }: { initialStudents: Student[]
                   <div className="wide"><dt>주소</dt><dd>{selected.address ?? emptyLabel}</dd></div>
                   <div><dt>학교명</dt><dd>{selected.school_name ?? emptyLabel}</dd></div>
                   <div><dt>생년월일</dt><dd>{selected.birth_date ? new Date(`${selected.birth_date}T00:00:00`).toLocaleDateString('ko-KR') : emptyLabel}</dd></div>
+                  <div><dt>성별</dt><dd>{selected.gender === 'male' ? '남' : selected.gender === 'female' ? '여' : emptyLabel}</dd></div>
                   <div><dt>보호자</dt><dd>{selected.guardians?.length ? selected.guardians.map((guardian) => `${guardian.relationship} ${guardian.name}`).join(', ') : '연결 안 됨'}</dd></div>
                   <div className="wide"><dt>비고</dt><dd>{selected.note ?? emptyLabel}</dd></div>
                 </dl>

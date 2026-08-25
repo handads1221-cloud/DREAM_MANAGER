@@ -7,6 +7,7 @@ export type Student = {
   address: string | null;
   school_name: string | null;
   birth_date: string | null;
+  gender: 'male' | 'female' | null;
   primary_parent_id: string | null;
   note: string | null;
   is_active: boolean;
