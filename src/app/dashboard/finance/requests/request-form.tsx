@@ -72,10 +72,11 @@ export function RequestForm() {
   return <form action={submit} className="finance-request-form">
     <label className="receipt-upload-first">영수증 사진<input name="receipts" type="file" accept="image/jpeg,image/png,image/webp" multiple required onChange={(event) => handleReceipts(event.target.files)}/><small>최대 5장 · 사진 선택 후 금액을 자동으로 인식합니다.</small></label>
     {previews.length ? <section className="receipt-preview" aria-label="선택한 영수증 미리보기"><div><b>영수증 미리보기</b><span>{previews.length}장 선택</span></div><div>{previews.map((preview, index) => <figure key={preview.url}><Image src={preview.url} alt={`선택한 영수증 ${index + 1}`} width={240} height={300} unoptimized/><figcaption>{index + 1}. {preview.name}</figcaption></figure>)}</div></section> : null}
+    {busy ? <p className="ocr-progress" role="status">{busy}</p> : null}
     {suggestions.length ? <section className="ocr-suggestions" aria-label="OCR 추천 금액"><div><b>인식된 금액 후보</b><span>영수증을 확인하고 선택하세요.</span></div><div>{suggestions.map((suggestion, index) => <button type="button" key={suggestion.amount} className={amount === String(suggestion.amount) ? 'selected' : ''} onClick={() => setAmount(String(suggestion.amount))}><i>{index === 0 ? '추천' : `후보 ${index + 1}`}</i><strong>{suggestion.amount.toLocaleString()}원</strong><small>신뢰도 {suggestion.confidence} · {suggestion.reason}</small></button>)}</div></section> : null}
     <label>비목<select name="category">{['행사비', '식비', '교통비', '물품비', '교육비', '기타'].map((category) => <option key={category}>{category}</option>)}</select></label>
     <label>금액<input name="amount" type="number" min="1" required value={amount} onChange={(event) => setAmount(event.target.value)} placeholder="영수증의 최종 결제금액"/></label>
     <label>내 계좌번호<input name="bank_account" required placeholder="은행명 계좌번호 예금주"/></label>
-    <label>내용<textarea name="memo"/></label><button disabled={busy.endsWith('중…')}>결제 요청</button>{busy ? <p>{busy}</p> : null}
+    <label>내용<textarea name="memo"/></label><button disabled={busy.endsWith('중…')}>결제 요청</button>
   </form>;
 }

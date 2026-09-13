@@ -2,6 +2,7 @@
 
 .finance-request-form .receipt-upload-first { grid-column: 1/-1; padding: 14px; border: 1px dashed #97cdb9; border-radius: 12px; background: #f0faf6; }.finance-request-form .receipt-upload-first small { color: #60736b; font-size: 9px; font-weight: 500; }
 .ocr-suggestions { grid-column: 1/-1; padding: 12px; border: 1px solid #c8e2d8; border-radius: 12px; background: #eef8f4; }
+.ocr-progress { grid-column: 1/-1; width: 100%; margin: -2px 0 2px; padding: 10px 12px; border-radius: 10px; background: #e8f6f1; color: #087b57; font-size: 10px; font-weight: 800; }
 .ocr-suggestions>div:first-child { margin-bottom: 9px; display: flex; justify-content: space-between; gap: 10px; }
 .ocr-suggestions>div:first-child b { font-size: 11px; }.ocr-suggestions>div:first-child span { color: #60736b; font-size: 9px; }
 .ocr-suggestions>div:last-child { display: grid; grid-template-columns: repeat(3,1fr); gap: 7px; }
