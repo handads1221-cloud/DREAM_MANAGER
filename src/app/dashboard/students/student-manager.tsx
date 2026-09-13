@@ -4,6 +4,7 @@ import { useMemo, useState, useTransition } from 'react';
 import Image from 'next/image';
 import { createStudent, deleteStudent, updateStudent } from './actions';
 import type { Student } from './types';
+import { compressPhotoInFormData } from '@/lib/compress-image';
 
 const emptyLabel = '미등록';
 
@@ -44,7 +45,9 @@ export function StudentManager({ initialStudents }: { initialStudents: Student[]
 
   const submitCreate = (formData: FormData) => {
     startTransition(async () => {
-      const result = await createStudent(formData);
+      let prepared: FormData;
+      try { prepared = await compressPhotoInFormData(formData); } catch (error) { setMessage({ kind: 'error', text: error instanceof Error ? error.message : '사진을 처리하지 못했습니다.' }); return; }
+      const result = await createStudent(prepared);
       if (!result.ok) { setMessage({ kind: 'error', text: result.message }); return; }
       setStudents((current) => [...current, result.student].sort((a, b) => a.grade - b.grade || a.full_name.localeCompare(b.full_name, 'ko')));
       setAdding(false);
@@ -67,7 +70,9 @@ export function StudentManager({ initialStudents }: { initialStudents: Student[]
 
   const submitUpdate = (formData: FormData) => {
     startTransition(async () => {
-      const result = await updateStudent(formData);
+      let prepared: FormData;
+      try { prepared = await compressPhotoInFormData(formData); } catch (error) { setMessage({ kind: 'error', text: error instanceof Error ? error.message : '사진을 처리하지 못했습니다.' }); return; }
+      const result = await updateStudent(prepared);
       if (!result.ok) {
         setMessage({ kind: 'error', text: result.message });
         return;
@@ -130,7 +135,7 @@ export function StudentManager({ initialStudents }: { initialStudents: Student[]
                 <label><span>학교명</span><input name="school_name" /></label>
                 <label><span>생년월일</span><input type="date" name="birth_date" min="1900-01-01" max={new Date().toISOString().slice(0, 10)} /></label>
                 <label><span>성별</span><select name="gender" defaultValue=""><option value="">선택 안 함</option><option value="male">남</option><option value="female">여</option></select></label>
-                <label className="wide"><span>얼굴 사진 (JPG·PNG·WEBP, 5MB 이하)</span><input type="file" name="photo" accept="image/jpeg,image/png,image/webp" /></label>
+                <label className="wide"><span>얼굴 사진 (JPG·PNG·WEBP, 큰 사진은 약 4MB로 자동 압축)</span><input type="file" name="photo" accept="image/jpeg,image/png,image/webp" /></label>
                 <label className="wide"><span>비고</span><textarea name="note" rows={3} /></label>
               </div>
               <div className="student-modal-actions"><button type="button" className="secondary" onClick={closeModal} disabled={pending}>취소</button><button type="submit" disabled={pending}>{pending ? '추가 중…' : '학생 추가'}</button></div>
@@ -163,7 +168,7 @@ export function StudentManager({ initialStudents }: { initialStudents: Student[]
                   <label><span>생년월일</span><input type="date" name="birth_date" min="1900-01-01" max={new Date().toISOString().slice(0, 10)} defaultValue={selected.birth_date ?? ''} /></label>
                   <label><span>성별</span><select name="gender" defaultValue={selected.gender ?? ''}><option value="">선택 안 함</option><option value="male">남</option><option value="female">여</option></select></label>
                   <input type="hidden" name="primary_parent_id" value={selected.primary_parent_id ?? ''} />
-                  <label className="wide"><span>얼굴 사진 변경 (JPG·PNG·WEBP, 5MB 이하)</span><input type="file" name="photo" accept="image/jpeg,image/png,image/webp" /></label>
+                  <label className="wide"><span>얼굴 사진 변경 (큰 사진은 약 4MB로 자동 압축)</span><input type="file" name="photo" accept="image/jpeg,image/png,image/webp" /></label>
                   <label className="wide"><span>비고</span><textarea name="note" defaultValue={selected.note ?? ''} rows={3} /></label>
                   <label className="student-active-check"><input type="checkbox" name="is_active" defaultChecked={selected.is_active} /><span>현재 명단에 표시되는 재학생</span></label>
                 </div>
