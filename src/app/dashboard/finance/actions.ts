@@ -34,6 +34,30 @@ export async function addLedgerEntry(formData: FormData) {
   go('/dashboard/finance', 'message', '장부에 등록했습니다.');
 }
 
+export async function updateLedgerMemo(formData: FormData) {
+  const context = await getContext();
+  if (!context || !financeRoles.has(context.role)) go('/dashboard/finance', 'error', '관리자 또는 회계담당자만 수정할 수 있습니다.');
+  const id = String(formData.get('id') ?? '');
+  if (!id) go('/dashboard/finance', 'error', '수정할 장부 기록을 찾지 못했습니다.');
+  const memo = String(formData.get('memo') ?? '').trim();
+  const { error } = await context.supabase.from('finance_ledger').update({ memo: memo || null }).eq('id', id).is('cancelled_at', null);
+  if (error) go('/dashboard/finance', 'error', error.message);
+  revalidatePath('/dashboard/finance');
+  go('/dashboard/finance', 'message', '메모를 수정했습니다.');
+}
+
+export async function deleteLedgerEntry(formData: FormData) {
+  const context = await getContext();
+  if (!context || !financeRoles.has(context.role)) go('/dashboard/finance', 'error', '관리자 또는 회계담당자만 삭제할 수 있습니다.');
+  const id = String(formData.get('id') ?? '');
+  if (!id) go('/dashboard/finance', 'error', '삭제할 장부 기록을 찾지 못했습니다.');
+  const { error } = await context.supabase.from('finance_ledger').update({ cancelled_at: new Date().toISOString(), cancelled_by: context.id }).eq('id', id).is('cancelled_at', null);
+  if (error) go('/dashboard/finance', 'error', error.message);
+  revalidatePath('/dashboard/finance');
+  revalidatePath('/dashboard');
+  go('/dashboard/finance', 'message', '기록을 취소 처리하고 잔액을 다시 계산했습니다.');
+}
+
 export async function createPaymentRequest(formData: FormData) {
   const context = await getContext();
   if (!context || context.role !== 'teacher') go('/dashboard/finance/requests', 'error', '선생님 계정에서 요청해 주세요.');

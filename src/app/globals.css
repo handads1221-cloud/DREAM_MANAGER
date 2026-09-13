@@ -48,6 +48,21 @@
 .dashboard-route-loading strong { font-size: 13px; }
 @keyframes dashboard-spin { to { transform: rotate(360deg); } }
 
+.finance-row { grid-template-columns: 95px 55px 100px 115px 120px minmax(210px, 1fr) 50px; }
+.finance-date-filter label { display: grid; gap: 4px; color: var(--muted); font-size: 9px; font-weight: 800; }
+.ledger-row-actions { grid-column: span 2; display: grid; grid-template-columns: minmax(170px, 1fr) auto; gap: 6px; }
+.ledger-row-actions form:first-child { display: grid; grid-template-columns: minmax(100px, 1fr) auto; gap: 5px; }
+.ledger-row-actions input,.ledger-row-actions button { width: 100%; min-width: 0; }
+.ledger-delete-button { color: #b83f35; border-color: #efc8c4 !important; background: #fff5f4 !important; }
+@media(max-width:700px) {
+  .finance-tools>form.finance-date-filter { grid-template-columns: 1fr 1fr; }
+  .finance-date-filter button { grid-column: 1/-1; }
+  .finance-row:not(.head) { grid-template-areas: "date type" "category amount" "balance balance" "actions actions"; }
+  .finance-row:not(.head)>:nth-child(5) { grid-area: balance; padding-top: 5px; border-top: 1px dashed var(--line); color: #21443a; }
+  .finance-row:not(.head)>:nth-child(5)::before { content: "거래 후 잔액 "; color: var(--muted); font-size: 9px; }
+  .finance-row:not(.head)>.ledger-row-actions { grid-area: actions; grid-column: auto; grid-template-columns: 1fr auto; }
+}
+
 :root {
   --ink: #25302d;
   --muted: #7b8581;
