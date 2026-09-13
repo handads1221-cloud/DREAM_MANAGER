@@ -28,10 +28,12 @@ export default async function Requests({ searchParams }: PageProps<'/dashboard/f
     requestIds.length ? supabase.from('payment_request_receipts').select('id,payment_request_id,storage_path,original_name').in('payment_request_id', requestIds).order('created_at') : Promise.resolve({ data: [] }),
   ]);
   const names = new Map((people ?? []).map((person) => [person.id, person.full_name]));
-  const signedReceipts = await Promise.all((receiptRows ?? []).map(async (receipt) => {
-    const { data } = await supabase.storage.from('finance-receipts').createSignedUrl(receipt.storage_path, 600);
-    return { ...receipt, url: data?.signedUrl ?? null };
-  }));
+  const receiptPaths = (receiptRows ?? []).map((receipt) => receipt.storage_path);
+  const { data: signedReceiptUrls } = receiptPaths.length
+    ? await supabase.storage.from('finance-receipts').createSignedUrls(receiptPaths, 600)
+    : { data: [] };
+  const receiptUrlByPath = new Map((signedReceiptUrls ?? []).map((item) => [item.path, item.signedUrl]));
+  const signedReceipts = (receiptRows ?? []).map((receipt) => ({ ...receipt, url: receiptUrlByPath.get(receipt.storage_path) ?? null }));
   const receiptsByRequest = new Map<string, typeof signedReceipts>();
   for (const receipt of signedReceipts) {
     const list = receiptsByRequest.get(receipt.payment_request_id) ?? [];

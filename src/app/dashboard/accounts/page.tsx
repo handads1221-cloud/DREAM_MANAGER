@@ -30,10 +30,12 @@ export default async function AccountsPage({ searchParams }: PageProps<'/dashboa
   const withdrawnAccounts = (accounts ?? []).filter((account) => account.account_status === 'withdrawn' || !account.is_active);
   const rolesByUser = new Map<string, string[]>();
   for (const row of assignedRoles ?? []) rolesByUser.set(row.user_id, [...(rolesByUser.get(row.user_id) ?? []), row.role]);
-  const teacherPhotos = new Map(await Promise.all(activeAccounts.filter((account) => rolesByUser.get(account.id)?.includes('teacher') && account.photo_path).map(async (account) => {
-    const { data: signed } = await supabase.storage.from('face-photos').createSignedUrl(account.photo_path!, 3600);
-    return [account.id, signed?.signedUrl ?? ''] as const;
-  })));
+  const teacherPhotoAccounts = activeAccounts.filter((account) => rolesByUser.get(account.id)?.includes('teacher') && account.photo_path);
+  const { data: signedTeacherPhotos } = teacherPhotoAccounts.length
+    ? await supabase.storage.from('face-photos').createSignedUrls(teacherPhotoAccounts.map((account) => account.photo_path!), 3600)
+    : { data: [] };
+  const teacherPhotoUrls = new Map((signedTeacherPhotos ?? []).map((item) => [item.path, item.signedUrl]));
+  const teacherPhotos = new Map(teacherPhotoAccounts.map((account) => [account.id, teacherPhotoUrls.get(account.photo_path!) ?? '']));
   const managedAccounts: ManagedAccount[] = activeAccounts.map((account) => ({ ...account, roles: rolesByUser.get(account.id) ?? [account.role], photoUrl: teacherPhotos.get(account.id) || null }));
 
   return <DashboardShell profile={{ full_name: profile.full_name, role: 'admin' }} activeHref="/dashboard/accounts">
