@@ -4,14 +4,17 @@ type Candidate = { amount: number; score: number; lineIndex: number; reasons: Se
 const primaryLabels = /(최종\s*결제|총\s*결제|결제\s*금액|승인\s*금액|받을\s*금액|청구\s*금액|합\s*계|총\s*액|grand\s*total|total\s*amount|amount\s*due)/i;
 const secondaryLabels = /(결제|승인|합계|총액|total|amount|현금|카드)/i;
 const misleadingLabels = /(사업자|등록번호|승인번호|카드번호|전화|tel|거래번호|가맹점번호|주문번호|일시|날짜|부가세|과세|면세|공급가|잔액|거스름|포인트|적립|할인\s*전)/i;
-const amountPattern = /(?:₩|￦|\bkrw\b)?\s*([0-9]{1,3}(?:[,\s.][0-9]{3})+|[0-9]{3,9})\s*(?:원|₩|￦|krw)?/gi;
+const amountPattern = /(?:₩|￦|\bkrw\b)?\s*([0-9]{1,3}(?:(?:\s*[,．.]\s*|\s+)[0-9Oo]{3})+|[0-9]{3,9})\s*(?:원|₩|￦|krw)?/gi;
 
 function amountsIn(line: string) {
-  return [...line.matchAll(amountPattern)].map((match) => ({ amount: Number(match[1].replace(/[,\s.]/g, '')), hasCurrency: /(?:원|₩|￦|krw)/i.test(match[0]) })).filter(({ amount }) => Number.isSafeInteger(amount) && amount >= 100 && amount < 100_000_000 && !(amount >= 1900 && amount <= 2100));
+  return [...line.matchAll(amountPattern)].map((match) => ({ amount: Number(match[1].replace(/[Oo]/g, '0').replace(/[,．.\s]/g, '')), hasCurrency: /(?:원|₩|￦|krw)/i.test(match[0]) })).filter(({ amount }) => Number.isSafeInteger(amount) && amount >= 100 && amount < 100_000_000 && !(amount >= 1900 && amount <= 2100));
 }
 
 export function rankReceiptAmounts(rawText: string): ReceiptAmountSuggestion[] {
-  const lines = rawText.split(/\r?\n/).map((line) => line.replace(/[|]/g, ' ').replace(/O(?=\d)|(?<=\d)O/g, '0').trim()).filter(Boolean);
+  const repairedText = rawText
+    .replace(/([,．.])\s*\r?\n\s*(?=[0-9Oo]{3}\b)/g, '$1')
+    .replace(/([0-9]{1,3})\s*\r?\n\s*([0-9Oo]{3}\s*(?:원|₩|￦|krw))/gi, '$1,$2');
+  const lines = repairedText.split(/\r?\n/).map((line) => line.replace(/[|]/g, ' ').replace(/O(?=\d)|(?<=\d)O/g, '0').trim()).filter(Boolean);
   const candidates: Candidate[] = [];
   lines.forEach((line, lineIndex) => {
     const previous = lines[lineIndex - 1] ?? '';
