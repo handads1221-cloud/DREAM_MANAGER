@@ -3,13 +3,15 @@
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
 import { compressImageFile } from '@/lib/compress-image';
-import { extractReceiptAmount } from '@/lib/receipt-ocr';
+import { preprocessReceiptImage } from '@/lib/receipt-image';
+import { rankReceiptAmounts, type ReceiptAmountSuggestion } from '@/lib/receipt-ocr';
 import { createPaymentRequest } from '../actions';
 
 export function RequestForm() {
   const [busy, setBusy] = useState('');
   const [amount, setAmount] = useState('');
   const [previews, setPreviews] = useState<{ name: string; url: string }[]>([]);
+  const [suggestions, setSuggestions] = useState<ReceiptAmountSuggestion[]>([]);
 
   useEffect(() => () => previews.forEach((preview) => URL.revokeObjectURL(preview.url)), [previews]);
 
@@ -19,10 +21,12 @@ export function RequestForm() {
     try {
       setBusy('영수증 금액 인식 중…');
       const { recognize } = await import('tesseract.js');
-      const { data } = await recognize(files[0], 'kor+eng');
-      const detected = extractReceiptAmount(data.text);
-      if (detected !== null) setAmount(String(detected));
-      setBusy(detected !== null ? '합계·결제금액을 우선 인식했습니다. 금액을 확인해 주세요.' : '사용금액을 찾지 못했습니다. 직접 입력해 주세요.');
+      const preparedImage = await preprocessReceiptImage(files[0]);
+      const { data } = await recognize(preparedImage, 'kor+eng');
+      const ranked = rankReceiptAmounts(data.text);
+      setSuggestions(ranked);
+      if (ranked[0]) setAmount(String(ranked[0].amount));
+      setBusy(ranked[0] ? `추천 금액을 입력했습니다. 인식 신뢰도 ${ranked[0].confidence}` : '사용금액을 찾지 못했습니다. 직접 입력해 주세요.');
     } catch {
       setBusy('OCR 인식에 실패했습니다. 금액을 직접 입력해 주세요.');
     }
@@ -31,6 +35,7 @@ export function RequestForm() {
   function handleReceipts(files: FileList | null) {
     const selected = Array.from(files ?? []).slice(0, 5);
     setPreviews(selected.map((file) => ({ name: file.name, url: URL.createObjectURL(file) })));
+    setSuggestions([]);
     void scan(files);
   }
 
@@ -53,6 +58,7 @@ export function RequestForm() {
     <label>내 계좌번호<input name="bank_account" required placeholder="은행명 계좌번호 예금주"/></label>
     <label>영수증 사진<input name="receipts" type="file" accept="image/jpeg,image/png,image/webp" multiple required onChange={(event) => handleReceipts(event.target.files)}/></label>
     {previews.length ? <section className="receipt-preview" aria-label="선택한 영수증 미리보기"><div><b>영수증 미리보기</b><span>{previews.length}장 선택</span></div><div>{previews.map((preview, index) => <figure key={preview.url}><Image src={preview.url} alt={`선택한 영수증 ${index + 1}`} width={240} height={300} unoptimized/><figcaption>{index + 1}. {preview.name}</figcaption></figure>)}</div></section> : null}
+    {suggestions.length ? <section className="ocr-suggestions" aria-label="OCR 추천 금액"><div><b>인식된 금액 후보</b><span>영수증을 확인하고 선택하세요.</span></div><div>{suggestions.map((suggestion, index) => <button type="button" key={suggestion.amount} className={amount === String(suggestion.amount) ? 'selected' : ''} onClick={() => setAmount(String(suggestion.amount))}><i>{index === 0 ? '추천' : `후보 ${index + 1}`}</i><strong>{suggestion.amount.toLocaleString()}원</strong><small>신뢰도 {suggestion.confidence} · {suggestion.reason}</small></button>)}</div></section> : null}
     <label>내용<textarea name="memo"/></label><button disabled={busy.endsWith('중…')}>결제 요청</button>{busy ? <p>{busy}</p> : null}
   </form>;
 }

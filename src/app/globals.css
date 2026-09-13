@@ -1,5 +1,14 @@
 @import 'tailwindcss';
 
+.ocr-suggestions { grid-column: 1/-1; padding: 12px; border: 1px solid #c8e2d8; border-radius: 12px; background: #eef8f4; }
+.ocr-suggestions>div:first-child { margin-bottom: 9px; display: flex; justify-content: space-between; gap: 10px; }
+.ocr-suggestions>div:first-child b { font-size: 11px; }.ocr-suggestions>div:first-child span { color: #60736b; font-size: 9px; }
+.ocr-suggestions>div:last-child { display: grid; grid-template-columns: repeat(3,1fr); gap: 7px; }
+.ocr-suggestions button { min-width: 0; padding: 10px !important; display: grid; justify-items: start; gap: 3px; border-color: #cbdad4 !important; text-align: left; cursor: pointer; }
+.ocr-suggestions button.selected { border-color: #0ca373 !important; background: #dff5ed !important; box-shadow: inset 0 0 0 1px #0ca373; }
+.ocr-suggestions i { color: #0b8963; font-size: 8px; font-style: normal; font-weight: 900; }.ocr-suggestions strong { font-size: 14px; }.ocr-suggestions small { overflow: hidden; color: #6a7772; font-size: 8px; text-overflow: ellipsis; white-space: nowrap; }
+@media (max-width: 700px) { .ocr-suggestions>div:last-child { grid-template-columns: 1fr; } }
+
 .finance-heading-actions { display: grid; justify-items: end; gap: 6px; }
 .finance-heading-actions a { color: #087b57; font-size: 10px; font-weight: 850; }
 .receipt-links { margin: 10px 0; padding: 10px; display: flex !important; flex-wrap: wrap; align-items: center; gap: 7px !important; border-radius: 10px; background: #f2f7f4; }
