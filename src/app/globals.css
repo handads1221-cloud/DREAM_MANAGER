@@ -1,5 +1,6 @@
 @import 'tailwindcss';
 
+.finance-request-form .receipt-upload-first { grid-column: 1/-1; padding: 14px; border: 1px dashed #97cdb9; border-radius: 12px; background: #f0faf6; }.finance-request-form .receipt-upload-first small { color: #60736b; font-size: 9px; font-weight: 500; }
 .ocr-suggestions { grid-column: 1/-1; padding: 12px; border: 1px solid #c8e2d8; border-radius: 12px; background: #eef8f4; }
 .ocr-suggestions>div:first-child { margin-bottom: 9px; display: flex; justify-content: space-between; gap: 10px; }
 .ocr-suggestions>div:first-child b { font-size: 11px; }.ocr-suggestions>div:first-child span { color: #60736b; font-size: 9px; }
