@@ -42,11 +42,14 @@ export async function updateBulkAttendance(formData: FormData): Promise<BulkAtte
   } else return { ok: false, message: '올바르지 않은 출석 처리 요청입니다.' };
   revalidatePath('/dashboard/attendance');
   revalidatePath('/dashboard');
+  revalidatePath('/dashboard/points');
+  revalidatePath('/dashboard/points/statistics');
   return { ok: true, action, studentIds, message: action === 'present' ? `${studentIds.length}명의 출석을 등록했습니다.` : `${studentIds.length}명의 출석을 취소했습니다.` };
 }
 
 export async function submitQr(formData: FormData) {
   const token = String(formData.get('token') ?? ''); const supabase = await createClient(); const { data, error } = await supabase.rpc('submit_qr_attendance', { raw_token: token });
+  if (!error) { revalidatePath('/dashboard'); revalidatePath('/dashboard/points'); revalidatePath('/dashboard/points/statistics'); }
   const rawError = error?.message.toLowerCase() ?? '';
   const message = !error ? String(data ?? '출석이 완료되었습니다.')
     : rawError.includes('student profile not linked') ? '학생 계정이 학생 명단에 연결되지 않았습니다. 관리자에게 학생계정 연결을 요청해 주세요.'
