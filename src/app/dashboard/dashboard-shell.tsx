@@ -16,7 +16,7 @@ const menus: Record<AppRole, MenuItem[]> = {
   accountant: [{ icon: 'home', label: '홈', href: '/dashboard' }, { icon: 'finance', label: '회계장부', href: '/dashboard/finance' }, { icon: 'accounts', label: '결제요청 관리', href: '/dashboard/finance/requests' }],
 };
 const mobileMenus: Record<AppRole, MenuItem[]> = {
-  admin: [menus.admin[0], menus.admin[2], menus.admin[4], menus.admin[5], menus.admin[8]],
+  admin: [menus.admin[0], menus.admin[1], menus.admin[4], menus.admin[5], menus.admin[8]],
   teacher: [menus.teacher[0], menus.teacher[1], menus.teacher[3], menus.teacher[5], menus.teacher[6]],
   parent: menus.parent,
   student: [menus.student[0], menus.student[1], menus.student[4]],
