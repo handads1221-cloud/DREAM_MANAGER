@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import Image from 'next/image';
+import { useEffect, useState } from 'react';
 import { compressImageFile } from '@/lib/compress-image';
 import { extractReceiptAmount } from '@/lib/receipt-ocr';
 import { createPaymentRequest } from '../actions';
@@ -8,6 +9,9 @@ import { createPaymentRequest } from '../actions';
 export function RequestForm() {
   const [busy, setBusy] = useState('');
   const [amount, setAmount] = useState('');
+  const [previews, setPreviews] = useState<{ name: string; url: string }[]>([]);
+
+  useEffect(() => () => previews.forEach((preview) => URL.revokeObjectURL(preview.url)), [previews]);
 
   async function scan(files: FileList | null) {
     if (!files?.[0]) return;
@@ -22,6 +26,12 @@ export function RequestForm() {
     } catch {
       setBusy('OCR 인식에 실패했습니다. 금액을 직접 입력해 주세요.');
     }
+  }
+
+  function handleReceipts(files: FileList | null) {
+    const selected = Array.from(files ?? []).slice(0, 5);
+    setPreviews(selected.map((file) => ({ name: file.name, url: URL.createObjectURL(file) })));
+    void scan(files);
   }
 
   async function submit(formData: FormData) {
@@ -41,7 +51,8 @@ export function RequestForm() {
     <label>비목<select name="category">{['행사비', '식비', '교통비', '물품비', '교육비', '기타'].map((category) => <option key={category}>{category}</option>)}</select></label>
     <label>금액<input name="amount" type="number" min="1" required value={amount} onChange={(event) => setAmount(event.target.value)} placeholder="영수증의 최종 결제금액"/></label>
     <label>내 계좌번호<input name="bank_account" required placeholder="은행명 계좌번호 예금주"/></label>
-    <label>영수증 사진<input name="receipts" type="file" accept="image/jpeg,image/png,image/webp" multiple required onChange={(event) => void scan(event.target.files)}/></label>
+    <label>영수증 사진<input name="receipts" type="file" accept="image/jpeg,image/png,image/webp" multiple required onChange={(event) => handleReceipts(event.target.files)}/></label>
+    {previews.length ? <section className="receipt-preview" aria-label="선택한 영수증 미리보기"><div><b>영수증 미리보기</b><span>{previews.length}장 선택</span></div><div>{previews.map((preview, index) => <figure key={preview.url}><Image src={preview.url} alt={`선택한 영수증 ${index + 1}`} width={240} height={300} unoptimized/><figcaption>{index + 1}. {preview.name}</figcaption></figure>)}</div></section> : null}
     <label>내용<textarea name="memo"/></label><button disabled={busy.endsWith('중…')}>결제 요청</button>{busy ? <p>{busy}</p> : null}
   </form>;
 }
