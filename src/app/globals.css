@@ -9,6 +9,18 @@
 .ocr-suggestions button.selected { border-color: #0ca373 !important; background: #dff5ed !important; box-shadow: inset 0 0 0 1px #0ca373; }
 .ocr-suggestions i { color: #0b8963; font-size: 8px; font-style: normal; font-weight: 900; }.ocr-suggestions strong { font-size: 14px; }.ocr-suggestions small { overflow: hidden; color: #6a7772; font-size: 8px; text-overflow: ellipsis; white-space: nowrap; }
 @media (max-width: 700px) { .ocr-suggestions>div:last-child { grid-template-columns: 1fr; } }
+@media (max-width: 700px) {
+  .operation-content { width: 100%; max-width: 100vw; overflow-x: clip; }
+  .finance-request-form,.payment-list,.payment-list article,.receipt-preview,.ocr-suggestions,.receipt-links { width: 100%; max-width: 100%; min-width: 0; box-sizing: border-box; }
+  .finance-request-form { padding: 12px; overflow: hidden; }
+  .finance-request-form label,.finance-request-form input,.finance-request-form select,.finance-request-form textarea,.finance-request-form button { width: 100%; max-width: 100%; min-width: 0; box-sizing: border-box; }
+  .finance-request-form input[type="file"] { overflow: hidden; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+  .receipt-preview>div,.receipt-preview figure,.ocr-suggestions>div,.ocr-suggestions button { max-width: 100%; min-width: 0; }
+  .ocr-suggestions small { width: 100%; }
+  .payment-list article { overflow: hidden; }
+  .payment-list article>p,.payment-list article span,.payment-list article b,.receipt-links a { min-width: 0; overflow-wrap: anywhere; word-break: break-word; }
+  .receipt-links { overflow: hidden; }
+}
 
 .finance-heading-actions { display: grid; justify-items: end; gap: 6px; }
 .finance-heading-actions a { color: #087b57; font-size: 10px; font-weight: 850; }
