@@ -1,10 +1,11 @@
 'use client';
 
 import Image from 'next/image';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { compressImageFile } from '@/lib/compress-image';
 import { preprocessReceiptImage } from '@/lib/receipt-image';
 import { rankReceiptAmounts, type ReceiptAmountSuggestion } from '@/lib/receipt-ocr';
+import { getReceiptOcrWorker, warmReceiptOcrWorker } from '@/lib/receipt-ocr-worker';
 import { createPaymentRequest } from '../actions';
 
 export function RequestForm() {
@@ -12,18 +13,34 @@ export function RequestForm() {
   const [amount, setAmount] = useState('');
   const [previews, setPreviews] = useState<{ name: string; url: string }[]>([]);
   const [suggestions, setSuggestions] = useState<ReceiptAmountSuggestion[]>([]);
+  const scanId = useRef(0);
 
   useEffect(() => () => previews.forEach((preview) => URL.revokeObjectURL(preview.url)), [previews]);
+  useEffect(() => {
+    const idleWindow = window as Window & { requestIdleCallback?: (callback: () => void) => number };
+    if (idleWindow.requestIdleCallback) idleWindow.requestIdleCallback(warmReceiptOcrWorker);
+    else window.setTimeout(warmReceiptOcrWorker, 300);
+  }, []);
 
   async function scan(files: FileList | null) {
     if (!files?.[0]) return;
     if (files.length > 5) { setBusy('영수증은 최대 5장까지 가능합니다.'); return; }
+    const currentScanId = ++scanId.current;
     try {
-      setBusy('영수증 금액 인식 중…');
-      const { recognize } = await import('tesseract.js');
-      const preparedImage = await preprocessReceiptImage(files[0]);
-      const { data } = await recognize(preparedImage, 'kor+eng');
-      const ranked = rankReceiptAmounts(data.text);
+      setBusy('OCR 엔진 준비 중…');
+      const worker = await getReceiptOcrWorker();
+      if (currentScanId !== scanId.current) return;
+      setBusy('영수증 하단에서 금액 찾는 중…');
+      const quickImage = await preprocessReceiptImage(files[0], { bottomRatio: 0.6, maxDimension: 1250 });
+      const quickResult = await worker.recognize(quickImage);
+      let ranked = rankReceiptAmounts(quickResult.data.text);
+      if (!ranked[0] || ranked[0].score < 55) {
+        setBusy('전체 영수증에서 금액 확인 중…');
+        const fullImage = await preprocessReceiptImage(files[0], { maxDimension: 1450 });
+        const fullResult = await worker.recognize(fullImage);
+        ranked = rankReceiptAmounts(`${quickResult.data.text}\n${fullResult.data.text}`);
+      }
+      if (currentScanId !== scanId.current) return;
       setSuggestions(ranked);
       if (ranked[0]) setAmount(String(ranked[0].amount));
       setBusy(ranked[0] ? `추천 금액을 입력했습니다. 인식 신뢰도 ${ranked[0].confidence}` : '사용금액을 찾지 못했습니다. 직접 입력해 주세요.');

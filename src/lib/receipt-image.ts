@@ -1,16 +1,24 @@
-export async function preprocessReceiptImage(file: File): Promise<Blob> {
+type ReceiptImageOptions = {
+  bottomRatio?: number;
+  maxDimension?: number;
+};
+
+export async function preprocessReceiptImage(file: File, options: ReceiptImageOptions = {}): Promise<Blob> {
   try {
     const bitmap = await createImageBitmap(file);
-    const longest = Math.max(bitmap.width, bitmap.height);
-    const scale = Math.min(2, Math.max(1, 1900 / longest));
-    const width = Math.round(bitmap.width * scale);
-    const height = Math.round(bitmap.height * scale);
+    const bottomRatio = Math.min(1, Math.max(0.35, options.bottomRatio ?? 1));
+    const sourceHeight = Math.round(bitmap.height * bottomRatio);
+    const sourceTop = bitmap.height - sourceHeight;
+    const maxDimension = options.maxDimension ?? 1450;
+    const scale = Math.min(1, maxDimension / Math.max(bitmap.width, sourceHeight));
+    const width = Math.max(1, Math.round(bitmap.width * scale));
+    const height = Math.max(1, Math.round(sourceHeight * scale));
     const canvas = document.createElement('canvas');
     canvas.width = width;
     canvas.height = height;
     const context = canvas.getContext('2d', { willReadFrequently: true });
     if (!context) return file;
-    context.drawImage(bitmap, 0, 0, width, height);
+    context.drawImage(bitmap, 0, sourceTop, bitmap.width, sourceHeight, 0, 0, width, height);
     bitmap.close();
     const image = context.getImageData(0, 0, width, height);
     for (let index = 0; index < image.data.length; index += 4) {
