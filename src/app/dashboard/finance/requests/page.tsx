@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { DashboardShell, type AppRole } from '../../dashboard-shell';
@@ -47,7 +48,7 @@ export default async function Requests({ searchParams }: PageProps<'/dashboard/f
     <div className="payment-list">{requests.map((request) => <article key={request.id}>
       <div><b>{request.category}</b><strong>{Number(request.amount).toLocaleString()}원</strong><span>{names.get(request.requester_id)} · {new Date(request.created_at).toLocaleDateString('ko-KR')}</span><em>{labels[request.status]}</em></div>
       <p>계좌 {request.bank_account}</p>{request.memo ? <p>{request.memo}</p> : null}{request.review_note ? <p>처리메모: {request.review_note}</p> : null}
-      <div className="receipt-links"><b>첨부 영수증</b>{(receiptsByRequest.get(request.id) ?? []).map((receipt, index) => receipt.url ? <a key={receipt.id} href={receipt.url} target="_blank" rel="noopener noreferrer">영수증 {index + 1} 보기 ↗</a> : <span key={receipt.id}>{receipt.original_name} 불러오기 실패</span>)}{!receiptsByRequest.get(request.id)?.length ? <span>첨부 없음</span> : null}</div>
+      <div className="receipt-links"><b>첨부 영수증</b>{(receiptsByRequest.get(request.id) ?? []).map((receipt, index) => receipt.url ? <a key={receipt.id} href={receipt.url} target="_blank" rel="noopener noreferrer">영수증 {index + 1} 보기 ↗</a> : <span key={receipt.id}>{receipt.original_name} 불러오기 실패</span>)}{!receiptsByRequest.get(request.id)?.length ? <span>첨부 없음</span> : null}<Link className="payment-pdf-link" href={`/dashboard/finance/requests/${request.id}/print`} target="_blank">PDF 저장·출력</Link></div>
       {canProcess && request.status !== 'paid' ? <form action={processPaymentRequest}><input type="hidden" name="request_id" value={request.id}/><select aria-label="처리 상태" name="status" defaultValue={request.status}><option value="reviewing">확인중</option><option value="approved">승인</option><option value="rejected">반려</option><option value="paid">지급완료·장부차감</option></select><input aria-label="처리 메모" name="review_note" placeholder="처리 메모"/><button>상태 변경</button></form> : null}
     </article>)}</div>
   </DashboardShell>;
