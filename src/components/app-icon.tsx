@@ -1,6 +1,6 @@
 import type { SVGProps } from 'react';
 
-export type AppIconName = 'home' | 'students' | 'relationships' | 'attendance' | 'calendar' | 'gem' | 'notice' | 'accounts' | 'contact' | 'child' | 'teacher' | 'inquiry' | 'qr';
+export type AppIconName = 'home' | 'students' | 'relationships' | 'attendance' | 'calendar' | 'gem' | 'notice' | 'accounts' | 'contact' | 'child' | 'teacher' | 'inquiry' | 'qr' | 'draw';
 type Props = SVGProps<SVGSVGElement> & { name: AppIconName };
 
 export function AppIcon({ name, ...props }: Props) {
@@ -19,6 +19,7 @@ export function AppIcon({ name, ...props }: Props) {
     {name === 'teacher' && <><circle cx="9" cy="8" r="3"/><path d="M3.8 19c.5-3.2 2.3-5 5.2-5 1.5 0 2.7.5 3.6 1.3M15 5h5v7h-5M17.5 12v3"/></>}
     {name === 'inquiry' && <><path d="M4 5.5h16v11H9l-4.5 3v-3H4z"/><path d="M8 9h8M8 12.5h5"/></>}
     {name === 'qr' && <><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h2v2h-2zM18 14h2v6h-6v-2M17 17h3"/></>}
+    {name === 'draw' && <><path d="M5 4c4.8.3 7.6 3.1 8.4 8.5M5 4l1.2 4.2M13.4 12.5v3.2"/><path d="M9.5 18c1.8-2 4-2.5 6.2-1.4l2.8-1.6-.4 2.8.4 2.8-2.8-1.6c-2.2 1.1-4.4.6-6.2-1Z"/><circle cx="13.6" cy="17.8" r=".35" fill="currentColor" stroke="none"/></>}
   </g></svg>;
 }
 
