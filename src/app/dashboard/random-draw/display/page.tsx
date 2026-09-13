@@ -1,10 +1,9 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
-import { RandomDrawDisplay } from './random-draw-display';
+import { RandomDrawDisplay, type DrawConfig } from './random-draw-display';
 
 export default async function RandomDrawDisplayPage({ searchParams }: PageProps<'/dashboard/random-draw/display'>) {
-  const { config: configParam = '' } = await searchParams;
-  const config = Array.isArray(configParam) ? configParam[0] ?? '' : configParam;
+  const params = await searchParams;
   const supabase = await createClient();
   const { data: claimsData, error: claimsError } = await supabase.auth.getClaims();
   if (claimsError || !claimsData?.claims?.sub) redirect('/login');
@@ -21,5 +20,16 @@ export default async function RandomDrawDisplayPage({ searchParams }: PageProps<
   const photoByPath = new Map<string, string>();
   for (const photo of signedPhotos ?? []) if (photo.path && photo.signedUrl) photoByPath.set(photo.path, photo.signedUrl);
   const drawStudents = (students ?? []).map((student) => ({ id: student.id, fullName: student.full_name, grade: student.grade, photoUrl: student.photo_path ? photoByPath.get(student.photo_path) ?? null : null }));
-  return <RandomDrawDisplay configKey={config} students={drawStudents} todayWinnerIds={(todayResults ?? []).map((result) => result.student_id)}/>;
+  const gradeParam = Array.isArray(params.grade) ? params.grade[0] : params.grade;
+  const preventDuplicateParam = Array.isArray(params.preventDuplicate) ? params.preventDuplicate[0] : params.preventDuplicate;
+  const excludedParams = Array.isArray(params.excluded) ? params.excluded : params.excluded ? [params.excluded] : [];
+  const validStudentIds = new Set(drawStudents.map((student) => student.id));
+  const validGrade = gradeParam === 'all' || ['1', '2', '3', '4', '5', '6'].includes(gradeParam ?? '');
+  const validDuplicateOption = preventDuplicateParam === 'true' || preventDuplicateParam === 'false';
+  const config: DrawConfig | null = validGrade && validDuplicateOption ? {
+    grade: gradeParam ?? 'all',
+    preventDuplicate: preventDuplicateParam === 'true',
+    excludedStudentIds: excludedParams.filter((id) => validStudentIds.has(id)),
+  } : null;
+  return <RandomDrawDisplay config={config} students={drawStudents} todayWinnerIds={(todayResults ?? []).map((result) => result.student_id)}/>;
 }

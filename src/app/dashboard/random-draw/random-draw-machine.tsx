@@ -3,8 +3,6 @@
 import { useMemo, useState } from 'react';
 
 export type DrawStudent = { id: string; fullName: string; grade: number; photoUrl: string | null };
-type DrawConfig = { version: 1; grade: string; excludedStudentIds: string[]; preventDuplicate: boolean };
-const CONFIG_PREFIX = 'dream-random-draw-config:';
 
 export function RandomDrawMachine({ students, todayWinnerIds }: { students: DrawStudent[]; todayWinnerIds: string[] }) {
   const [grade, setGrade] = useState('all');
@@ -28,12 +26,10 @@ export function RandomDrawMachine({ students, todayWinnerIds }: { students: Draw
       setMessage('추첨 가능한 학생이 없습니다. 제외 명단이나 중복 방지 설정을 확인해 주세요.');
       return;
     }
-    const configKey = `${CONFIG_PREFIX}${crypto.randomUUID()}`;
-    const config: DrawConfig = { version: 1, grade, excludedStudentIds: [...excluded], preventDuplicate };
-    localStorage.setItem(configKey, JSON.stringify(config));
-    const popup = window.open(`/dashboard/random-draw/display?config=${encodeURIComponent(configKey)}`, 'dream-random-draw-display', 'popup=yes,width=1440,height=900,menubar=no,toolbar=no,location=no,status=no,scrollbars=no,resizable=yes');
+    const params = new URLSearchParams({ grade, preventDuplicate: String(preventDuplicate) });
+    excluded.forEach((id) => params.append('excluded', id));
+    const popup = window.open(`/dashboard/random-draw/display?${params.toString()}`, 'dream-random-draw-display', 'popup=yes,width=1440,height=900,menubar=no,toolbar=no,location=no,status=no,scrollbars=no,resizable=yes');
     if (!popup) {
-      localStorage.removeItem(configKey);
       setMessage('새 창이 차단되었습니다. 브라우저 주소창의 팝업 차단을 허용한 뒤 다시 눌러 주세요.');
       return;
     }
