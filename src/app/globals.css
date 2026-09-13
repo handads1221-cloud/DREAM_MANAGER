@@ -2,6 +2,10 @@
 
 .finance-heading-actions { display: grid; justify-items: end; gap: 6px; }
 .finance-heading-actions a { color: #087b57; font-size: 10px; font-weight: 850; }
+.receipt-links { margin: 10px 0; padding: 10px; display: flex !important; flex-wrap: wrap; align-items: center; gap: 7px !important; border-radius: 10px; background: #f2f7f4; }
+.receipt-links b { margin-right: 3px; font-size: 10px; }
+.receipt-links a { padding: 7px 9px; border: 1px solid #bfe2d5; border-radius: 8px; background: #fff; color: #087b57; font-size: 9px; font-weight: 850; text-decoration: none; }
+.receipt-links span { color: var(--muted); font-size: 9px; }
 @media (max-width: 700px) { .finance-heading-actions { justify-items: start; } }
 
 :root {
