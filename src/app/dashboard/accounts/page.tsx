@@ -4,8 +4,8 @@ import { DashboardShell } from '../dashboard-shell';
 import { approveRegistration, rejectRegistration, restoreAccount } from './actions';
 import { ActiveAccountManager, type ManagedAccount } from './active-account-manager';
 
-const roleLabel: Record<string, string> = { admin: '관리자', teacher: '선생님', parent: '부모님', student: '학생' };
-const roleOrder = ['parent', 'student', 'teacher', 'admin'] as const;
+const roleLabel: Record<string, string> = { admin: '관리자', teacher: '선생님', parent: '부모님', student: '학생', accountant: '회계담당자' };
+const roleOrder = ['parent', 'student', 'teacher', 'accountant', 'admin'] as const;
 const RoleChecks = ({ selected = ['parent'], disabled = false }: { selected?: string[]; disabled?: boolean }) => <fieldset className="role-checks"><legend>계정 권한 (복수 선택)</legend>{roleOrder.map((role) => <label key={role}><input type="checkbox" name="roles" value={role} defaultChecked={selected.includes(role)} disabled={disabled} />{roleLabel[role]}</label>)}</fieldset>;
 
 export default async function AccountsPage({ searchParams }: PageProps<'/dashboard/accounts'>) {

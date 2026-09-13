@@ -41,3 +41,10 @@ export async function compressPhotoInFormData(formData: FormData, field = 'photo
   formData.set(field, new File([compressed], `${baseName}.jpg`, { type: 'image/jpeg', lastModified: Date.now() }));
   return formData;
 }
+
+export async function compressImageFile(file: File) {
+  const data = new FormData();
+  data.set('photo', file);
+  await compressPhotoInFormData(data);
+  return data.get('photo') as File;
+}

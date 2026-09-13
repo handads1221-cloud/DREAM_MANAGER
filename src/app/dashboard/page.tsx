@@ -9,6 +9,7 @@ const roleCopy: Record<AppRole, { eyebrow: string; title: string; description: s
   teacher: { eyebrow: 'TEACHER HOME', title: '아이들의 오늘을 함께 기록해요', description: '담당 학생의 출석과 보석, 연락처를 빠르게 확인합니다.' },
   parent: { eyebrow: 'PARENT HOME', title: '우리 아이의 소식을 확인하세요', description: '연결된 자녀의 출석과 보석, 공지와 선생님 정보를 확인합니다.' },
   student: { eyebrow: 'STUDENT HOME', title: '오늘도 반짝이는 하루!', description: '내 출석과 보석을 확인하고 QR로 출석할 수 있습니다.' },
+  accountant: { eyebrow: 'FINANCE HOME', title: '드림어린이부 재정을 투명하게', description: '수입·지출 장부와 결제요청 처리 현황을 관리합니다.' },
 };
 
 function BirthdayCard({ month, title, people }: { month: number; title: string; people: { name: string; role: string; date: string }[] }) {
@@ -90,6 +91,10 @@ export default async function DashboardPage() {
     const [{ count: attendanceCount }, { data: balances }, { count: inquiryCount }] = await Promise.all([childIds.length ? supabase.from('attendance_records').select('*', { count: 'exact', head: true }).in('student_id', childIds).in('status', ['present','late']) : Promise.resolve({ count: 0 }), childIds.length ? supabase.from('student_point_balances').select('balance').in('student_id', childIds) : Promise.resolve({ data: [] }), supabase.from('inquiries').select('*', { count: 'exact', head: true }).eq('parent_id', userId)]);
     const balance = (balances ?? []).reduce((sum, item) => sum + Number(item.balance), 0);
     stats = [{ label: '연결된 자녀', value: `${childIds.length}명`, href: '#children', tone: 'mint' }, { label: '자녀 출석 기록', value: `${attendanceCount ?? 0}회`, href: '#attendance', tone: 'blue' }, { label: '자녀 보석 합계', value: `${balance}개`, href: '#points', tone: 'yellow' }, { label: '문의', value: `${inquiryCount ?? 0}건`, href: '#inquiry', tone: 'pink' }];
+  } else if (role === 'accountant') {
+    const [{ data: ledger }, { count: pendingCount }] = await Promise.all([supabase.from('finance_ledger').select('entry_type, amount'), supabase.from('payment_requests').select('*', { count: 'exact', head: true }).in('status', ['pending','reviewing','approved'])]);
+    const balance = (ledger ?? []).reduce((sum, item) => sum + (item.entry_type === 'income' ? Number(item.amount) : -Number(item.amount)), 0);
+    stats = [{ label: '현재 잔액', value: `${balance.toLocaleString('ko-KR')}원`, href: '/dashboard/finance', tone: 'mint' }, { label: '처리할 요청', value: `${pendingCount ?? 0}건`, href: '/dashboard/finance/requests', tone: 'pink' }];
   } else {
     const { data: student } = await supabase.from('students').select('id, grade').eq('profile_id', userId).maybeSingle();
     const [{ data: balance }, { count: attendanceCount }] = student ? await Promise.all([supabase.from('student_point_balances').select('balance').eq('student_id', student.id).maybeSingle(), supabase.from('attendance_records').select('*', { count: 'exact', head: true }).eq('student_id', student.id).in('status', ['present','late'])]) : [{ data: null }, { count: 0 }];
@@ -97,7 +102,7 @@ export default async function DashboardPage() {
   }
 
   return <DashboardShell profile={{ full_name: profile.full_name, role }}>
-    {assignedRoles.length > 1 && <form action={switchActiveRole} className="role-switcher"><span>화면 전환</span>{assignedRoles.map((assignedRole) => <button key={assignedRole} type="submit" name="role" value={assignedRole} className={role === assignedRole ? 'active' : ''} disabled={role === assignedRole}>{assignedRole === 'admin' ? '관리자' : assignedRole === 'teacher' ? '선생님' : assignedRole === 'parent' ? '부모님' : '학생'}</button>)}</form>}
+    {assignedRoles.length > 1 && <form action={switchActiveRole} className="role-switcher"><span>화면 전환</span>{assignedRoles.map((assignedRole) => <button key={assignedRole} type="submit" name="role" value={assignedRole} className={role === assignedRole ? 'active' : ''} disabled={role === assignedRole}>{assignedRole === 'admin' ? '관리자' : assignedRole === 'teacher' ? '선생님' : assignedRole === 'parent' ? '부모님' : assignedRole === 'accountant' ? '회계담당자' : '학생'}</button>)}</form>}
     <div className="operation-welcome"><div><p>{copy.eyebrow}</p><h1>{profile.full_name}님, 반가워요</h1><span>{copy.description}</span></div>{role === 'admin' ? <Link className="home-qr-button" href="/dashboard/attendance/qr?display=1" target="_blank"><b>오늘의 출석 QR</b><small>새 화면으로 열기 →</small></Link> : <div className={`role-home-badge ${role}`}>{copy.title}</div>}</div>
     {adminOverview ? <><section className="admin-summary-grid"><div className="operation-stat-grid admin-compact-stats">{stats.map((stat) => <Link key={stat.label} href={stat.href} className={`operation-stat ${stat.tone}`}><span>{stat.label}</span><strong>{stat.value}</strong>{stat.detail && <b>{stat.detail}</b>}<small>자세히 보기 →</small></Link>)}</div><AttendanceChart weeks={adminOverview.weeks}/></section><UpcomingPlans plans={adminOverview.upcomingPlans}/><div className="birthday-month-grid"><BirthdayCard month={adminOverview.previousMonth} title="지난달 생일자" people={adminOverview.previousBirthdays}/><BirthdayCard month={adminOverview.currentMonth} title="이번 달 생일자" people={adminOverview.currentBirthdays}/></div></> : <section className="operation-stat-grid">{stats.map((stat) => <Link key={stat.label} href={stat.href} className={`operation-stat ${stat.tone}`}><span>{stat.label}</span><strong>{stat.value}</strong><small>자세히 보기 →</small></Link>)}</section>}
     <section className="role-home-panel"><div><p className="eyebrow">QUICK START</p><h2>{copy.title}</h2><span>현재 계정 권한에 맞는 기능만 표시됩니다.</span></div><div className="role-quick-links">
@@ -105,6 +110,7 @@ export default async function DashboardPage() {
       {role === 'teacher' && <><Link href="/dashboard/attendance">대리 출석등록</Link><Link href="/dashboard/plans">계획표</Link><Link href="/dashboard/points">드림보석 지급</Link><Link href="/dashboard/notices">공지게시판</Link><Link href="#contacts">학생·부모 연락처</Link></>}
       {role === 'parent' && <><Link href="#children">우리아이 정보</Link><Link href="/dashboard/notices">공지게시판</Link><Link href="#inquiry">관리자 문의</Link></>}
       {role === 'student' && <><Link href="/dashboard/check-in">QR 출석</Link><Link href="/dashboard/notices">공지게시판</Link><Link href="#attendance">내 출석현황</Link><Link href="#points">내 보석</Link></>}
+      {role === 'accountant' && <><Link href="/dashboard/finance">회계장부</Link><Link href="/dashboard/finance/requests">결제요청 관리</Link></>}
     </div></section>
   </DashboardShell>;
 }

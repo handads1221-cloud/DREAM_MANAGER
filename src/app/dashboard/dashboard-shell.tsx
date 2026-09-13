@@ -4,21 +4,23 @@ import type { ReactNode } from 'react';
 import { AppIcon, type AppIconName } from '@/components/app-icon';
 import { signOut } from './actions';
 
-export type AppRole = 'admin' | 'teacher' | 'parent' | 'student';
+export type AppRole = 'admin' | 'teacher' | 'parent' | 'student' | 'accountant';
 const DREAM_BAND_URL = 'https://band.us/band/6987073';
-const roleLabel: Record<AppRole, string> = { admin: '관리자', teacher: '선생님', parent: '부모님', student: '학생' };
+const roleLabel: Record<AppRole, string> = { admin: '관리자', teacher: '선생님', parent: '부모님', student: '학생', accountant: '회계담당자' };
 type MenuItem = { icon: AppIconName; label: string; href: string };
 const menus: Record<AppRole, MenuItem[]> = {
-  admin: [{ icon: 'home', label: '홈', href: '/dashboard' }, { icon: 'students', label: '학생명단관리', href: '/dashboard/students' }, { icon: 'relationships', label: '계정·가족연결', href: '/dashboard/relationships' }, { icon: 'attendance', label: '출석관리', href: '/dashboard/attendance' }, { icon: 'calendar', label: '계획표', href: '/dashboard/plans' }, { icon: 'gem', label: '드림보석', href: '/dashboard/points' }, { icon: 'notice', label: '공지게시판', href: '/dashboard/notices' }, { icon: 'accounts', label: '가입승인', href: '/dashboard/accounts' }, { icon: 'draw', label: '랜덤 뽑기', href: '/dashboard/random-draw' }],
-  teacher: [{ icon: 'home', label: '홈', href: '/dashboard' }, { icon: 'students', label: '전체 학생', href: '/dashboard/attendance' }, { icon: 'attendance', label: '출석등록', href: '/dashboard/attendance' }, { icon: 'calendar', label: '계획표', href: '/dashboard/plans' }, { icon: 'gem', label: '보석 관리', href: '/dashboard/points' }, { icon: 'notice', label: '공지게시판', href: '/dashboard/notices' }, { icon: 'contact', label: '연락처', href: '/dashboard#contacts' }],
+  admin: [{ icon: 'home', label: '홈', href: '/dashboard' }, { icon: 'finance', label: '회계장부', href: '/dashboard/finance' }, { icon: 'students', label: '학생명단관리', href: '/dashboard/students' }, { icon: 'relationships', label: '계정·가족연결', href: '/dashboard/relationships' }, { icon: 'attendance', label: '출석관리', href: '/dashboard/attendance' }, { icon: 'calendar', label: '계획표', href: '/dashboard/plans' }, { icon: 'gem', label: '드림보석', href: '/dashboard/points' }, { icon: 'notice', label: '공지게시판', href: '/dashboard/notices' }, { icon: 'accounts', label: '가입승인', href: '/dashboard/accounts' }, { icon: 'draw', label: '랜덤 뽑기', href: '/dashboard/random-draw' }],
+  teacher: [{ icon: 'home', label: '홈', href: '/dashboard' }, { icon: 'finance', label: '결제요청', href: '/dashboard/finance/requests' }, { icon: 'students', label: '전체 학생', href: '/dashboard/attendance' }, { icon: 'attendance', label: '출석등록', href: '/dashboard/attendance' }, { icon: 'calendar', label: '계획표', href: '/dashboard/plans' }, { icon: 'gem', label: '보석 관리', href: '/dashboard/points' }, { icon: 'notice', label: '공지게시판', href: '/dashboard/notices' }, { icon: 'contact', label: '연락처', href: '/dashboard#contacts' }],
   parent: [{ icon: 'home', label: '홈', href: '/dashboard' }, { icon: 'child', label: '우리아이', href: '/dashboard#children' }, { icon: 'notice', label: '공지게시판', href: '/dashboard/notices' }, { icon: 'teacher', label: '선생님 정보', href: '/dashboard#teacher' }, { icon: 'inquiry', label: '문의하기', href: '/dashboard#inquiry' }],
   student: [{ icon: 'home', label: '홈', href: '/dashboard' }, { icon: 'qr', label: 'QR 출석', href: '/dashboard/check-in' }, { icon: 'attendance', label: '내 출석', href: '/dashboard#attendance' }, { icon: 'gem', label: '내 보석', href: '/dashboard#points' }, { icon: 'notice', label: '공지게시판', href: '/dashboard/notices' }],
+  accountant: [{ icon: 'home', label: '홈', href: '/dashboard' }, { icon: 'finance', label: '회계장부', href: '/dashboard/finance' }, { icon: 'accounts', label: '결제요청 관리', href: '/dashboard/finance/requests' }],
 };
 const mobileMenus: Record<AppRole, MenuItem[]> = {
-  admin: [menus.admin[0], menus.admin[1], menus.admin[3], menus.admin[4], menus.admin[7]],
-  teacher: [menus.teacher[0], menus.teacher[2], menus.teacher[3], menus.teacher[4], menus.teacher[5]],
+  admin: [menus.admin[0], menus.admin[2], menus.admin[4], menus.admin[5], menus.admin[8]],
+  teacher: [menus.teacher[0], menus.teacher[1], menus.teacher[3], menus.teacher[5], menus.teacher[6]],
   parent: menus.parent,
   student: [menus.student[0], menus.student[1], menus.student[4]],
+  accountant: menus.accountant,
 };
 
 export function DashboardShell({ profile, activeHref = '/dashboard', children }: { profile: { full_name: string; role: AppRole }; activeHref?: string; children: ReactNode }) {

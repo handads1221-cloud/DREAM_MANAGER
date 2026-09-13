@@ -4,10 +4,10 @@ import Image from 'next/image';
 import { useMemo, useState } from 'react';
 import { setAccountPassword, updateAccountProfile, updateAccountRole, updateTeacherBirthDate, updateTeacherPhoto, withdrawAccount } from './actions';
 
-type Role = 'admin' | 'teacher' | 'parent' | 'student';
+type Role = 'admin' | 'teacher' | 'parent' | 'student' | 'accountant';
 export type ManagedAccount = { id: string; email: string | null; full_name: string; phone: string | null; address: string | null; note: string | null; birth_date: string | null; role: string; roles: string[]; photoUrl: string | null };
-const roleLabel: Record<string,string> = { admin: '관리자', teacher: '선생님', parent: '부모님', student: '학생' };
-const roleOrder: Role[] = ['parent','student','teacher','admin'];
+const roleLabel: Record<string,string> = { admin: '관리자', teacher: '선생님', parent: '부모님', student: '학생', accountant: '회계담당자' };
+const roleOrder: Role[] = ['parent','student','teacher','accountant','admin'];
 
 export function ActiveAccountManager({ accounts, currentUserId }: { accounts: ManagedAccount[]; currentUserId: string }) {
   const [query,setQuery] = useState(''); const [role,setRole] = useState('all'); const [selected,setSelected] = useState<ManagedAccount|null>(null);

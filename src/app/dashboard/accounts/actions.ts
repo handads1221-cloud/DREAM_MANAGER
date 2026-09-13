@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 
-const allowedRoles = new Set(['parent', 'student', 'teacher', 'admin']);
+const allowedRoles = new Set(['parent', 'student', 'teacher', 'accountant', 'admin']);
 
 function selectedRoles(formData: FormData) {
   return [...new Set(formData.getAll('roles').map(String).filter((role) => allowedRoles.has(role)))];
