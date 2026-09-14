@@ -147,6 +147,7 @@ button { color: inherit; }
 .brand div { display: grid; gap: 2px; }
 .brand strong { font-size: 18px; letter-spacing: -.03em; }
 .brand small { color: var(--muted); font-size: 11px; }
+.mobile-brand-title { display: none; }
 .profile-button { border: 0; background: transparent; display: flex; align-items: center; gap: 11px; cursor: pointer; }
 .profile-button { text-decoration: none; color: inherit; }
 .avatar { width: 42px; height: 42px; border-radius: 50%; display: grid; place-items: center; background: var(--mint-soft); color: #087b57; font-weight: 800; }
@@ -256,6 +257,11 @@ button { color: inherit; }
   .topbar { height: 68px; padding: 0 18px; }
   .church-logo { width: 112px; height: 42px; }
   .brand-divider, .brand div, .profile-copy { display: none; }
+  .brand { min-width: 0; gap: 10px; }
+  .brand .church-brand-mark { width: 42px; height: 42px; flex: 0 0 42px; }
+  .brand .mobile-brand-title { min-width: 0; display: grid; gap: 1px; line-height: 1.15; white-space: nowrap; }
+  .brand .mobile-brand-title small { color: #728079; font-size: 9px; font-weight: 700; }
+  .brand .mobile-brand-title strong { color: var(--ink); font-size: 14px; font-weight: 900; letter-spacing: -.04em; }
   .avatar { width: 38px; height: 38px; }
   .layout { display: block; }
   .sidebar { display: none; }
@@ -279,6 +285,11 @@ button { color: inherit; }
   .mobile-nav a { min-width: 0; min-height: 54px; padding: 5px 2px 4px; display: grid; grid-template-rows: 27px 15px; align-content: center; justify-items: center; gap: 1px; border-radius: 14px; color: #7d8984; text-decoration: none; }
   .mobile-nav a span { width: 25px; height: 25px; display: grid; place-items: center; }.mobile-nav a svg { width: 22px; height: 22px; }.mobile-nav a small { max-width: 100%; overflow: hidden; font-size: 9px; font-weight: 750; line-height: 15px; white-space: nowrap; text-overflow: ellipsis; }.mobile-nav a.active { background: var(--mint-soft); color: #087b57; }.mobile-nav a.active svg { stroke-width: 2.2; }
   .mobile-band-shortcut { position: fixed; right: 16px; bottom: calc(max(10px,env(safe-area-inset-bottom)) + 78px); z-index: 31; display: flex; align-items: center; gap: 6px; padding: 6px 10px 6px 6px; border: 1px solid #bceec9; border-radius: 15px; background: rgba(255,255,255,.97); box-shadow: 0 8px 24px rgba(20,90,45,.16); color: #176f34; font-size: 10px; font-weight: 850; text-decoration: none; }.mobile-band-shortcut>b { width: 29px; height: 29px; border-radius: 9px; font-size: 15px; }
+}
+@media (max-width: 360px) {
+  .topbar { padding-inline: 12px; }
+  .operation-profile .profile-button { display: none; }
+  .brand .mobile-brand-title strong { font-size: 13px; }
 }
 @media (max-width: 520px) {
   .role-switcher { width: 100%; overflow-x: auto; }
