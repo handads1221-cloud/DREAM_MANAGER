@@ -64,6 +64,10 @@
 }
 
 .attendance-live-summary.compact { grid-template-columns: minmax(0,360px); margin-bottom: 9px; }
+.absence-streak-card { margin: -2px 0 16px; padding: 17px 20px; display: grid; grid-template-columns: minmax(220px,1fr) auto minmax(260px,1.3fr); align-items: center; gap: 18px; border: 1px solid #f0d5cc; border-radius: 18px; background: #fff8f5; }
+.absence-streak-card h2 { margin: 2px 0 4px; font-size: 17px; }.absence-streak-card>div>span { color: var(--muted); font-size: 9px; }.absence-streak-card>strong { color: #c35c49; font-size: 29px; }.absence-streak-card>strong small { margin-left: 3px; font-size: 11px; }
+.absence-student-list { display: flex; flex-wrap: wrap; gap: 5px; }.absence-student-list>span { padding: 6px 8px; border-radius: 99px; background: #fff; color: #8f4c40 !important; font-size: 9px !important; font-weight: 800; }.absence-student-list p { margin: 0; color: #56806f; font-size: 10px; }
+@media(max-width:700px) { .absence-streak-card { grid-template-columns: 1fr auto; gap: 10px; padding: 15px; }.absence-student-list { grid-column: 1/-1; }.absence-streak-card>div>span { display: block; line-height: 1.45; } }
 .attendance-live-summary.compact>div { min-height: 76px; display: flex; align-items: center; justify-content: space-between; }
 .attendance-live-summary.compact strong { font-size: 28px; }
 .attendance-live-summary.compact strong small { color: var(--muted); font-size: 15px; }

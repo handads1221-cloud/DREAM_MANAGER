@@ -22,6 +22,10 @@ function AttendanceChart({ weeks }: { weeks: { date: string; count: number; curr
   return <article className="attendance-chart-card"><div><p className="eyebrow">ATTENDANCE TREND</p><h2>최근 4주 출석</h2></div><div className="attendance-bars">{weeks.map((week) => <div key={week.date} className={week.current ? 'current' : ''}><strong>{week.count}명</strong><span><i style={{ height: `${Math.max(week.count ? 12 : 4, (week.count / max) * 100)}%` }} /></span><small>{Number(week.date.slice(5,7))}/{Number(week.date.slice(8,10))}{week.current ? ' 이번주' : ''}</small></div>)}{weeks.length === 0 && <p>출석 기록이 없습니다.</p>}</div></article>;
 }
 
+function ConsecutiveAbsenceCard({ students }: { students: string[] }) {
+  return <article className="absence-streak-card"><div><p className="eyebrow">ATTENDANCE CHECK</p><h2>3주 연속 결석</h2><span>최근 3개 주일에 출석·지각 기록이 없는 재학생</span></div><strong>{students.length}<small>명</small></strong><div className="absence-student-list">{students.map((name) => <span key={name}>{name}</span>)}{students.length === 0 && <p>3주 연속 결석한 학생이 없습니다.</p>}</div></article>;
+}
+
 function UpcomingPlans({ plans }: { plans: { id: string; schedule_date: string; schedule_time: string | null; title: string }[] }) {
   return <section className="upcoming-plans-card"><Link href="/dashboard/plans" className="upcoming-plans-heading"><div><p className="eyebrow">UPCOMING PLAN</p><h2>다가오는 일정</h2></div><span>계획표 보기 →</span></Link><div className="upcoming-plans-list">{plans.map((plan) => <Link key={plan.id} href="/dashboard/plans"><time><b>{Number(plan.schedule_date.slice(5,7))}월 {Number(plan.schedule_date.slice(8,10))}일</b><small>{plan.schedule_time ? plan.schedule_time.slice(0,5) : '시간 미정'}</small></time><strong>{plan.title}</strong><i>›</i></Link>)}{plans.length === 0 && <p>등록된 다가오는 일정이 없습니다.</p>}</div></section>;
 }
@@ -46,7 +50,7 @@ export default async function DashboardPage() {
   const assignedRoles = (assignedRoleRows ?? []).map((row) => row.role as AppRole);
   const copy = roleCopy[role];
   let stats: { label: string; value: string; href: string; tone: string; detail?: string }[];
-  let adminOverview: null | { weeks: { date: string; count: number; current: boolean }[]; upcomingPlans: { id: string; schedule_date: string; schedule_time: string | null; title: string }[]; previousMonth: number; currentMonth: number; previousBirthdays: { name: string; role: string; date: string }[]; currentBirthdays: { name: string; role: string; date: string }[] } = null;
+  let adminOverview: null | { weeks: { date: string; count: number; current: boolean }[]; upcomingPlans: { id: string; schedule_date: string; schedule_time: string | null; title: string }[]; previousMonth: number; currentMonth: number; previousBirthdays: { name: string; role: string; date: string }[]; currentBirthdays: { name: string; role: string; date: string }[]; consecutiveAbsences: string[] } = null;
   let studentHighlights: null | { gems: number; attendance: number } = null;
   let studentPhotoUrl: string | null = null;
   if (role === 'admin' || role === 'teacher') {
@@ -61,31 +65,38 @@ export default async function DashboardPage() {
       sunday.setUTCDate(latestSunday.getUTCDate() - (3 - index) * 7);
       return sunday.toISOString().slice(0, 10);
     });
-    const [{ count: studentCount }, { data: events }, { data: studentBirthdays }, { data: teacherRoles }, { data: upcomingPlans }] = await Promise.all([
-      supabase.from('students').select('*', { count: 'exact', head: true }).eq('is_active', true),
+    const [{ data: activeStudents }, { data: events }, { data: teacherRoles }, { data: upcomingPlans }] = await Promise.all([
+      supabase.from('students').select('id,full_name,birth_date').eq('is_active', true).order('full_name'),
       supabase.from('attendance_events').select('id, service_date').gte('service_date', sundayDates[0]).lte('service_date', sundayDates[3]),
-      supabase.from('students').select('full_name, birth_date').eq('is_active', true).not('birth_date', 'is', null),
       supabase.from('user_roles').select('user_id').eq('role', 'teacher'),
       supabase.from('weekly_plans').select('id,schedule_date,schedule_time,title').gte('schedule_date', today).order('schedule_date').order('schedule_time').limit(5),
     ]);
     const eventIds = (events ?? []).map((event) => event.id);
     const teacherIds = (teacherRoles ?? []).map((item) => item.user_id);
     const [{ data: attendanceRows }, { data: teacherBirthdays }] = await Promise.all([
-      eventIds.length ? supabase.from('attendance_records').select('event_id').in('event_id', eventIds).in('status', ['present','late']) : Promise.resolve({ data: [] }),
+      eventIds.length ? supabase.from('attendance_records').select('event_id,student_id').in('event_id', eventIds).in('status', ['present','late']) : Promise.resolve({ data: [] }),
       teacherIds.length ? supabase.from('profiles').select('full_name, birth_date').in('id', teacherIds).eq('is_active', true).not('birth_date', 'is', null) : Promise.resolve({ data: [] }),
     ]);
     const eventDates = new Map((events ?? []).map((event) => [event.id, event.service_date]));
     const attendanceByDate = new Map<string, number>();
+    const attendedDatesByStudent = new Map<string, Set<string>>();
     for (const row of attendanceRows ?? []) {
       const serviceDate = eventDates.get(row.event_id);
-      if (serviceDate && sundayDates.includes(serviceDate)) attendanceByDate.set(serviceDate, (attendanceByDate.get(serviceDate) ?? 0) + 1);
+      if (serviceDate && sundayDates.includes(serviceDate)) {
+        attendanceByDate.set(serviceDate, (attendanceByDate.get(serviceDate) ?? 0) + 1);
+        const dates = attendedDatesByStudent.get(row.student_id) ?? new Set<string>();
+        dates.add(serviceDate);
+        attendedDatesByStudent.set(row.student_id, dates);
+      }
     }
     const weeks = sundayDates.map((date, index) => ({ date, count: attendanceByDate.get(date) ?? 0, current: index === sundayDates.length - 1 }));
-    const people = [...(studentBirthdays ?? []).map((item) => ({ name: item.full_name, role: '학생', date: item.birth_date! })), ...(teacherBirthdays ?? []).map((item) => ({ name: item.full_name, role: '선생님', date: item.birth_date! }))];
+    const people = [...(activeStudents ?? []).filter((item) => item.birth_date).map((item) => ({ name: item.full_name, role: '학생', date: item.birth_date! })), ...(teacherBirthdays ?? []).map((item) => ({ name: item.full_name, role: '선생님', date: item.birth_date! }))];
     const inMonth = (month: number) => people.filter((person) => Number(person.date.slice(5, 7)) === month).sort((a, b) => a.date.slice(5).localeCompare(b.date.slice(5)));
     const latest = weeks.at(-1);
-    stats = [{ label: '재학생', value: `${studentCount ?? 0}명`, href: role === 'admin' ? '/dashboard/students' : '/dashboard/attendance', tone: 'mint' }, { label: '이번 주 출석', value: `${latest?.count ?? 0}명`, detail: latest ? `${Number(latest.date.slice(5,7))}월 ${Number(latest.date.slice(8,10))}일` : '예배일 미등록', href: '/dashboard/attendance', tone: 'pink' }];
-    adminOverview = { weeks, upcomingPlans: upcomingPlans ?? [], previousMonth, currentMonth, previousBirthdays: inMonth(previousMonth), currentBirthdays: inMonth(currentMonth) };
+    const recentThreeSundays = sundayDates.slice(-3);
+    const consecutiveAbsences = (activeStudents ?? []).filter((student) => recentThreeSundays.every((date) => !attendedDatesByStudent.get(student.id)?.has(date))).map((student) => student.full_name);
+    stats = [{ label: '재학생', value: `${activeStudents?.length ?? 0}명`, href: role === 'admin' ? '/dashboard/students' : '/dashboard/attendance', tone: 'mint' }, { label: '이번 주 출석', value: `${latest?.count ?? 0}명`, detail: latest ? `${Number(latest.date.slice(5,7))}월 ${Number(latest.date.slice(8,10))}일` : '예배일 미등록', href: '/dashboard/attendance', tone: 'pink' }];
+    adminOverview = { weeks, upcomingPlans: upcomingPlans ?? [], previousMonth, currentMonth, previousBirthdays: inMonth(previousMonth), currentBirthdays: inMonth(currentMonth), consecutiveAbsences };
   } else if (role === 'parent') {
     const { data: children } = await supabase.from('students').select('id').eq('is_active', true); const childIds = (children ?? []).map(child => child.id);
     const [{ count: attendanceCount }, { data: balances }, { count: inquiryCount }] = await Promise.all([childIds.length ? supabase.from('attendance_records').select('*', { count: 'exact', head: true }).in('student_id', childIds).in('status', ['present','late']) : Promise.resolve({ count: 0 }), childIds.length ? supabase.from('student_point_balances').select('balance').in('student_id', childIds) : Promise.resolve({ data: [] }), supabase.from('inquiries').select('*', { count: 'exact', head: true }).eq('parent_id', userId)]);
@@ -109,7 +120,7 @@ export default async function DashboardPage() {
   return <DashboardShell profile={{ full_name: profile.full_name, role }}>
     {assignedRoles.length > 1 && <form action={switchActiveRole} className="role-switcher"><span>화면 전환</span>{assignedRoles.map((assignedRole) => <button key={assignedRole} type="submit" name="role" value={assignedRole} className={role === assignedRole ? 'active' : ''} disabled={role === assignedRole}>{assignedRole === 'admin' ? '관리자' : assignedRole === 'teacher' ? '선생님' : assignedRole === 'parent' ? '부모님' : assignedRole === 'accountant' ? '회계담당자' : '학생'}</button>)}</form>}
     <div className="operation-welcome"><div><p>{copy.eyebrow}</p><h1>{profile.full_name}님, 반가워요</h1><span>{copy.description}</span></div>{role === 'admin' ? <Link className="home-qr-button" href="/dashboard/attendance/qr?display=1" target="_blank"><b>오늘의 출석 QR</b><small>새 화면으로 열기 →</small></Link> : role === 'student' ? <div className="student-welcome-photo">{studentPhotoUrl ? <Image src={studentPhotoUrl} alt={`${profile.full_name} 학생 얼굴 사진`} width={150} height={150} unoptimized/> : <span>{profile.full_name.slice(0,1)}</span>}</div> : <div className={`role-home-badge ${role}`}>{copy.title}</div>}</div>
-    {studentHighlights ? <section className="student-highlight-grid"><article id="points" className="student-highlight-card treasure"><div><span>나의 드림보석</span><strong>{studentHighlights.gems}<small>개</small></strong><p>차곡차곡 모은 멋진 보물이야!</p></div><Image src="/student-treasure-chest.png" alt="보석이 가득한 보물상자" width={460} height={306}/></article><article id="attendance" className="student-highlight-card attendance"><div><span>나의 누적 출석</span><strong>{studentHighlights.attendance}<small>일</small></strong><p>{studentHighlights.attendance ? `${studentHighlights.attendance}번이나 함께했어! 정말 멋져!` : '첫 출석을 기다리고 있어요!'}</p></div><Image src="/student-attendance-cheer.png" alt="출석을 응원하는 어린이들" width={460} height={306}/></article></section> : adminOverview ? <><section className="admin-summary-grid"><div className="operation-stat-grid admin-compact-stats">{stats.map((stat) => <Link key={stat.label} href={stat.href} className={`operation-stat ${stat.tone}`}><span>{stat.label}</span><strong>{stat.value}</strong>{stat.detail && <b>{stat.detail}</b>}<small>자세히 보기 →</small></Link>)}</div><AttendanceChart weeks={adminOverview.weeks}/></section><UpcomingPlans plans={adminOverview.upcomingPlans}/><div className="birthday-month-grid"><BirthdayCard month={adminOverview.previousMonth} title="지난달 생일자" people={adminOverview.previousBirthdays}/><BirthdayCard month={adminOverview.currentMonth} title="이번 달 생일자" people={adminOverview.currentBirthdays}/></div></> : <section className="operation-stat-grid">{stats.map((stat) => <Link key={stat.label} href={stat.href} className={`operation-stat ${stat.tone}`}><span>{stat.label}</span><strong>{stat.value}</strong><small>자세히 보기 →</small></Link>)}</section>}
+    {studentHighlights ? <section className="student-highlight-grid"><article id="points" className="student-highlight-card treasure"><div><span>나의 드림보석</span><strong>{studentHighlights.gems}<small>개</small></strong><p>차곡차곡 모은 멋진 보물이야!</p></div><Image src="/student-treasure-chest.png" alt="보석이 가득한 보물상자" width={460} height={306}/></article><article id="attendance" className="student-highlight-card attendance"><div><span>나의 누적 출석</span><strong>{studentHighlights.attendance}<small>일</small></strong><p>{studentHighlights.attendance ? `${studentHighlights.attendance}번이나 함께했어! 정말 멋져!` : '첫 출석을 기다리고 있어요!'}</p></div><Image src="/student-attendance-cheer.png" alt="출석을 응원하는 어린이들" width={460} height={306}/></article></section> : adminOverview ? <><section className="admin-summary-grid"><div className="operation-stat-grid admin-compact-stats">{stats.map((stat) => <Link key={stat.label} href={stat.href} className={`operation-stat ${stat.tone}`}><span>{stat.label}</span><strong>{stat.value}</strong>{stat.detail && <b>{stat.detail}</b>}<small>자세히 보기 →</small></Link>)}</div><AttendanceChart weeks={adminOverview.weeks}/></section><ConsecutiveAbsenceCard students={adminOverview.consecutiveAbsences}/><UpcomingPlans plans={adminOverview.upcomingPlans}/><div className="birthday-month-grid"><BirthdayCard month={adminOverview.previousMonth} title="지난달 생일자" people={adminOverview.previousBirthdays}/><BirthdayCard month={adminOverview.currentMonth} title="이번 달 생일자" people={adminOverview.currentBirthdays}/></div></> : <section className="operation-stat-grid">{stats.map((stat) => <Link key={stat.label} href={stat.href} className={`operation-stat ${stat.tone}`}><span>{stat.label}</span><strong>{stat.value}</strong><small>자세히 보기 →</small></Link>)}</section>}
     {role !== 'student' && <section className="role-home-panel"><div><p className="eyebrow">QUICK START</p><h2>{copy.title}</h2><span>현재 계정 권한에 맞는 기능만 표시됩니다.</span></div><div className="role-quick-links">
       {role === 'admin' && <><Link href="/dashboard/finance">회계장부</Link><Link href="/dashboard/finance/requests">결제요청 관리</Link><Link href="/dashboard/accounts">가입 승인</Link><Link href="/dashboard/relationships">계정·가족·담당 연결</Link><Link href="/dashboard/students">학생명단관리</Link><Link href="/dashboard/attendance">출석·QR 관리</Link><Link href="/dashboard/plans">계획표</Link><Link href="/dashboard/points">드림보석 관리</Link><Link href="/dashboard/notices">공지게시판 관리</Link></>}
       {role === 'teacher' && <><Link href="/dashboard/attendance">대리 출석등록</Link><Link href="/dashboard/plans">계획표</Link><Link href="/dashboard/points">드림보석 지급</Link><Link href="/dashboard/notices">공지게시판</Link><Link href="#contacts">학생·부모 연락처</Link></>}
