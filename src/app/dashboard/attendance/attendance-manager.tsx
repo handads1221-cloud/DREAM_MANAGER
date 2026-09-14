@@ -10,13 +10,22 @@ const statusLabel: Record<string, string> = { present: '출석', late: '지각',
 
 export function AttendanceManager({ eventId, serviceDate, initialStudents, initialRecords }: { eventId: string | null; serviceDate: string; initialStudents: Student[]; initialRecords: AttendanceRecord[] }) {
   const [grade, setGrade] = useState<number | 'all'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'present' | 'absent'>('all');
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [records, setRecords] = useState(() => new Map(initialRecords.map((record) => [record.student_id, record])));
   const [feedback, setFeedback] = useState<{ kind: 'success' | 'error'; text: string } | null>(null);
   const [pending, startTransition] = useTransition();
-  const visible = useMemo(() => grade === 'all' ? initialStudents : initialStudents.filter((student) => student.grade === grade), [grade, initialStudents]);
+  const visible = useMemo(() => initialStudents.filter((student) => {
+    if (grade !== 'all' && student.grade !== grade) return false;
+    const attended = ['present','late'].includes(records.get(student.id)?.status ?? '');
+    return statusFilter === 'all' || (statusFilter === 'present' ? attended : !attended);
+  }), [grade, statusFilter, initialStudents, records]);
   const counts = useMemo(() => initialStudents.reduce<Record<number, number>>((all, student) => ({ ...all, [student.grade]: (all[student.grade] ?? 0) + 1 }), {}), [initialStudents]);
   const presentCount = useMemo(() => [...records.values()].filter((record) => ['present','late'].includes(record.status)).length, [records]);
+  const presentByGrade = useMemo(() => initialStudents.reduce<Record<number, number>>((all, student) => {
+    if (['present','late'].includes(records.get(student.id)?.status ?? '')) all[student.grade] = (all[student.grade] ?? 0) + 1;
+    return all;
+  }, {}), [initialStudents, records]);
   const visibleIds = visible.map((student) => student.id); const allVisibleSelected = visibleIds.length > 0 && visibleIds.every((id) => selected.has(id));
 
   const toggle = (id: string) => setSelected((current) => { const next = new Set(current); if (next.has(id)) next.delete(id); else next.add(id); return next; });
@@ -34,8 +43,9 @@ export function AttendanceManager({ eventId, serviceDate, initialStudents, initi
   };
 
   return <section className="attendance-manager">
-    <div className="attendance-live-summary"><div><span>출석</span><strong>{presentCount}명</strong></div><div><span>미출석</span><strong>{Math.max(initialStudents.length - presentCount, 0)}명</strong></div><div><span>전체</span><strong>{initialStudents.length}명</strong></div></div>
-    <div className="attendance-grade-filter"><button className={grade === 'all' ? 'active' : ''} onClick={() => { setGrade('all'); setSelected(new Set()); }}>전체 <span>{initialStudents.length}</span></button>{[1,2,3,4,5,6].map((item) => <button key={item} className={grade === item ? 'active' : ''} onClick={() => { setGrade(item); setSelected(new Set()); }}>{item}학년 <span>{counts[item] ?? 0}</span></button>)}</div>
+    <div className="attendance-live-summary compact"><div><span>이번 주 출석</span><strong>{presentCount}<small> / {initialStudents.length}명</small></strong></div></div>
+    <div className="attendance-grade-summary">{[1,2,3,4,5,6].map((item) => <span key={item}><b>{item}학년</b><strong>{presentByGrade[item] ?? 0}<small>/{counts[item] ?? 0}명</small></strong></span>)}</div>
+    <div className="attendance-filter-stack"><div className="attendance-grade-filter"><button type="button" className={grade === 'all' ? 'active' : ''} onClick={() => { setGrade('all'); setSelected(new Set()); }}>전체 <span>{initialStudents.length}</span></button>{[1,2,3,4,5,6].map((item) => <button type="button" key={item} className={grade === item ? 'active' : ''} onClick={() => { setGrade(item); setSelected(new Set()); }}>{item}학년 <span>{counts[item] ?? 0}</span></button>)}</div><div className="attendance-status-filter" aria-label="출석 상태 필터"><button type="button" className={statusFilter === 'all' ? 'active' : ''} onClick={() => { setStatusFilter('all'); setSelected(new Set()); }}>전체 보기</button><button type="button" className={statusFilter === 'present' ? 'active' : ''} onClick={() => { setStatusFilter('present'); setSelected(new Set()); }}>출석만 보기</button><button type="button" className={statusFilter === 'absent' ? 'active' : ''} onClick={() => { setStatusFilter('absent'); setSelected(new Set()); }}>미출석만 보기</button></div></div>
     <div className="attendance-bulk-bar"><label><input type="checkbox" checked={allVisibleSelected} onChange={toggleAll}/> 현재 목록 전체선택</label><span>{selected.size}명 선택</span><button onClick={() => runAction('present')} disabled={pending || selected.size === 0}>선택 출석</button><button className="cancel" onClick={() => runAction('cancel')} disabled={pending || selected.size === 0}>선택 출석취소</button></div>
     {feedback && <p className={`form-alert ${feedback.kind}`}>{feedback.text}</p>}
     <div className="attendance-table"><div className="attendance-table-head"><span>선택</span><span>이름</span><span>학년·반</span><span>상태</span></div>{visible.map((student) => { const record = records.get(student.id); return <label className={selected.has(student.id) ? 'attendance-row selected' : 'attendance-row'} key={student.id}><input type="checkbox" checked={selected.has(student.id)} onChange={() => toggle(student.id)}/><b>{student.full_name}</b><span>{student.grade}학년 · {student.class_name ?? '반 미정'}</span><strong className={record ? `status-${record.status}` : 'status-none'}>{record ? statusLabel[record.status] ?? record.status : '미등록'}</strong></label>; })}</div>

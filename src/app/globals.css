@@ -63,6 +63,29 @@
   .finance-row:not(.head)>.ledger-row-actions { grid-area: actions; grid-column: auto; grid-template-columns: 1fr auto; }
 }
 
+.attendance-live-summary.compact { grid-template-columns: minmax(0,360px); margin-bottom: 9px; }
+.attendance-live-summary.compact>div { min-height: 76px; display: flex; align-items: center; justify-content: space-between; }
+.attendance-live-summary.compact strong { font-size: 28px; }
+.attendance-live-summary.compact strong small { color: var(--muted); font-size: 15px; }
+.attendance-grade-summary { display: grid; grid-template-columns: repeat(6,minmax(0,1fr)); gap: 7px; margin-bottom: 13px; }
+.attendance-grade-summary>span { padding: 10px; display: grid; gap: 4px; border: 1px solid var(--line); border-radius: 12px; background: #fff; text-align: center; }
+.attendance-grade-summary b { color: var(--muted); font-size: 9px; }
+.attendance-grade-summary strong { color: #087b57; font-size: 17px; }
+.attendance-grade-summary small { margin-left: 2px; color: var(--muted); font-size: 9px; }
+.attendance-filter-stack { display: grid; gap: 8px; }
+.attendance-status-filter { display: flex; gap: 7px; overflow-x: auto; }
+.attendance-status-filter button { min-height: 36px; padding: 0 12px; flex: 0 0 auto; border: 1px solid var(--line); border-radius: 99px; background: #fff; color: #63706b; font-size: 10px; font-weight: 800; cursor: pointer; }
+.attendance-status-filter button.active { border-color: #243f36; background: #243f36; color: #fff; }
+@media(max-width:560px) {
+  .attendance-live-summary.compact { grid-template-columns: 1fr; }
+  .attendance-live-summary.compact>div { min-height: 64px; padding: 11px 14px; }
+  .attendance-grade-summary { grid-template-columns: repeat(6,minmax(49px,1fr)); gap: 4px; overflow-x: auto; }
+  .attendance-grade-summary>span { padding: 8px 4px; }
+  .attendance-grade-summary strong { font-size: 15px; }
+  .attendance-status-filter { display: grid; grid-template-columns: repeat(3,1fr); }
+  .attendance-status-filter button { min-width: 0; padding: 0 5px; font-size: 9px; }
+}
+
 .student-highlight-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 14px; margin: 18px 0; }
 .student-welcome-photo { width: 126px; height: 126px; flex: 0 0 126px; padding: 6px; display: grid; place-items: center; border: 3px solid rgba(255,255,255,.9); border-radius: 50%; background: rgba(255,255,255,.22); box-shadow: 0 12px 30px rgba(26,61,70,.18); }
 .student-welcome-photo img,.student-welcome-photo span { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
