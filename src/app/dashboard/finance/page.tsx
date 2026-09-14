@@ -2,10 +2,9 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { DashboardShell, type AppRole } from '../dashboard-shell';
-import { addLedgerEntry } from './actions';
+import { LedgerEntryDialog } from './ledger-entry-dialog';
 import { LedgerRowActions } from './ledger-row-actions';
 
-const categories = ['주정헌금', '십일조', '감사헌금', '선교헌금', '교회재정', '행사비', '식비', '물품비', '기타'];
 type LedgerRow = { id: string; transaction_date: string; entry_type: string; category: string; amount: number; memo: string | null };
 
 function withRunningBalances(rows: LedgerRow[]) {
@@ -44,13 +43,7 @@ export default async function FinancePage({ searchParams }: PageProps<'/dashboar
     {typeof params.error === 'string' ? <p className="form-alert error">{params.error}</p> : null}
     <div className="finance-tools">
       <form className="finance-date-filter"><label>시작일<input aria-label="조회 시작일" type="date" name="from" defaultValue={from}/></label><label>종료일<input aria-label="조회 종료일" type="date" name="to" defaultValue={to}/></label><button>기간 조회</button></form>
-      <details><summary>수입·지출 등록</summary><form action={addLedgerEntry}>
-        <input aria-label="거래 일자" type="date" name="transaction_date" defaultValue={new Date().toISOString().slice(0, 10)} required/>
-        <select aria-label="거래 유형" name="entry_type"><option value="income">수입</option><option value="expense">지출</option></select>
-        <select aria-label="비목" name="category">{categories.map((category) => <option key={category}>{category}</option>)}</select>
-        <input aria-label="금액" name="amount" type="number" min="1" placeholder="금액" required/>
-        <input aria-label="메모" name="memo" placeholder="메모(선택)"/><button>등록</button>
-      </form></details>
+      <LedgerEntryDialog today={today}/>
     </div>
     <div className="finance-table">
       <div className="finance-row head"><b>일자</b><b>유형</b><b>비목</b><b>금액</b><b>잔액</b><b>메모 수정</b><b>삭제</b></div>

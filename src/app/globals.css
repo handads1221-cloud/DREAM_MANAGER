@@ -664,3 +664,40 @@ button { color: inherit; }
   .finance-tools details form { grid-template-columns: 1fr; }
   .finance-tools details form > * { grid-column: 1!important; }
 }
+
+/* Finance ledger entry modal. */
+.ledger-entry-open { min-width: 132px; color: #fff; border-color: #0aa878!important; background: #0aa878!important; font-weight: 850; cursor: pointer; }
+.ledger-entry-dialog { width: min(540px,calc(100vw - 32px)); max-width: none; max-height: calc(100dvh - 32px); margin: auto; padding: 0; overflow: visible; border: 0; border-radius: 22px; background: transparent; color: var(--ink); }
+.ledger-entry-dialog::backdrop { background: rgba(18,36,31,.56); backdrop-filter: blur(3px); }
+.ledger-entry-dialog-panel { max-height: calc(100dvh - 32px); padding: 24px; overflow-y: auto; border-radius: 22px; background: #fff; box-shadow: 0 24px 70px rgba(18,45,37,.28); }
+.ledger-entry-dialog-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 20px; }
+.ledger-entry-dialog-heading small { color: #0aa878; font-size: 9px; font-weight: 900; letter-spacing: .08em; }
+.ledger-entry-dialog-heading h2 { margin: 4px 0 0; font-size: 24px; }
+.ledger-entry-dialog-heading > button { width: 38px; height: 38px; flex: 0 0 auto; border: 0; border-radius: 50%; background: #f0f5f2; color: #52655e; font-size: 23px; line-height: 1; cursor: pointer; }
+.ledger-entry-form { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 12px; }
+.ledger-entry-form label { min-width: 0; display: grid; gap: 6px; color: #465850; font-size: 10px; font-weight: 850; }
+.ledger-entry-form label span { color: var(--muted); font-weight: 600; }
+.ledger-entry-form input,.ledger-entry-form select { width: 100%; min-width: 0; height: 46px; padding: 0 12px; border: 1px solid var(--line); border-radius: 11px; background: #fbfdfc; color: var(--ink); font: inherit; font-size: 11px; }
+.ledger-entry-form input:focus,.ledger-entry-form select:focus { outline: 2px solid rgba(10,168,120,.18); border-color: #0aa878; }
+.ledger-entry-memo,.ledger-entry-dialog-actions { grid-column: 1/-1; }
+.ledger-entry-dialog-actions { display: grid; grid-template-columns: 1fr 1.4fr; gap: 8px; margin-top: 6px; }
+.ledger-entry-dialog-actions button { min-height: 46px; border: 1px solid var(--line); border-radius: 12px; background: #fff; font-weight: 850; cursor: pointer; }
+.ledger-entry-dialog-actions button[type="submit"] { color: #fff; border-color: #0aa878; background: #0aa878; }
+
+@media(max-width:700px) {
+  .ledger-entry-open { width: 100%; min-height: 44px; }
+  .ledger-entry-dialog { width: 100%; max-height: calc(100dvh - 18px); margin: auto 0 0; }
+  .ledger-entry-dialog-panel { max-height: calc(100dvh - 18px); padding: 20px 16px max(18px,env(safe-area-inset-bottom)); border-radius: 22px 22px 0 0; }
+  .ledger-entry-dialog-heading { margin-bottom: 16px; }
+  .ledger-entry-dialog-heading h2 { font-size: 22px; }
+  .ledger-entry-form { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px 8px; }
+  .ledger-entry-form input,.ledger-entry-form select { height: 44px; padding-inline: 9px; }
+  .ledger-entry-form label:nth-child(4),.ledger-entry-memo { grid-column: 1/-1; }
+  .ledger-entry-dialog-actions { position: sticky; bottom: 0; padding-top: 5px; background: #fff; }
+}
+
+@media(max-width:370px) {
+  .ledger-entry-form { grid-template-columns: 1fr; }
+  .ledger-entry-form label { grid-column: 1!important; }
+  .ledger-entry-dialog-actions { grid-column: 1; }
+}
