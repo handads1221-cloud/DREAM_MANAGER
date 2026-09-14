@@ -23,7 +23,7 @@ export function LedgerEntryDialog({ today }: { today: string }) {
           <label>유형<select name="entry_type" defaultValue="income"><option value="income">수입</option><option value="expense">지출</option></select></label>
           <label>세부 유형<select name="category">{categories.map((category) => <option key={category}>{category}</option>)}</select></label>
           <label>금액<input name="amount" type="number" inputMode="numeric" min="1" placeholder="금액을 입력해 주세요" required/></label>
-          <label className="ledger-entry-memo">메모 <span>(선택)</span><input name="memo" placeholder="간단한 내용을 입력해 주세요"/></label>
+          <label className="ledger-entry-memo">메모 (선택)<input name="memo" placeholder="간단한 내용을 입력해 주세요"/></label>
           <div className="ledger-entry-dialog-actions">
             <button type="button" onClick={() => dialogRef.current?.close()}>취소</button>
             <button type="submit">장부에 등록</button>
