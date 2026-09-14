@@ -10,10 +10,11 @@ export default async function RandomDrawPage() {
   if (claimsError || !claimsData?.claims?.sub) redirect('/login');
   const userId = claimsData.claims.sub;
   const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Seoul', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
-  const [{ data: profile }, { data: students }, { data: todayResults }] = await Promise.all([
+  const [{ data: profile }, { data: students }, { data: todayResults }, { data: savedExclusions }] = await Promise.all([
     supabase.from('profiles').select('full_name, role, is_active').eq('id', userId).maybeSingle(),
     supabase.from('students').select('id, full_name, grade, photo_path').eq('is_active', true).order('grade').order('full_name'),
     supabase.from('random_draw_results').select('student_id').eq('draw_date', today),
+    supabase.from('random_draw_exclusions').select('student_id').eq('user_id', userId),
   ]);
   if (!profile?.is_active || profile.role !== 'admin') redirect('/dashboard');
 
@@ -25,6 +26,6 @@ export default async function RandomDrawPage() {
 
   return <DashboardShell profile={{ full_name: profile.full_name, role: 'admin' }} activeHref="/dashboard/random-draw">
     <Link href="/dashboard" className="back-home-button"><span aria-hidden="true">←</span> 홈으로</Link>
-    <RandomDrawMachine students={drawStudents} todayWinnerIds={(todayResults ?? []).map((result) => result.student_id)}/>
+    <RandomDrawMachine students={drawStudents} todayWinnerIds={(todayResults ?? []).map((result) => result.student_id)} initialExcludedIds={(savedExclusions ?? []).map((row) => row.student_id)}/>
   </DashboardShell>;
 }

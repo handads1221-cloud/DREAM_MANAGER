@@ -1,24 +1,40 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { clearRandomDrawExclusions, setRandomDrawExclusion } from './actions';
 
 export type DrawStudent = { id: string; fullName: string; grade: number; photoUrl: string | null };
 
-export function RandomDrawMachine({ students, todayWinnerIds }: { students: DrawStudent[]; todayWinnerIds: string[] }) {
+export function RandomDrawMachine({ students, todayWinnerIds, initialExcludedIds }: { students: DrawStudent[]; todayWinnerIds: string[]; initialExcludedIds: string[] }) {
   const [grade, setGrade] = useState('all');
-  const [excluded, setExcluded] = useState<Set<string>>(new Set());
+  const [excluded, setExcluded] = useState<Set<string>>(() => new Set(initialExcludedIds));
+  const [savingExclusions, setSavingExclusions] = useState<Set<string>>(new Set());
   const [preventDuplicate, setPreventDuplicate] = useState(true);
   const [message, setMessage] = useState('옵션을 선택한 뒤 전용 추첨 화면을 열어 주세요.');
   const wonToday = useMemo(() => new Set(todayWinnerIds), [todayWinnerIds]);
   const visibleStudents = useMemo(() => students.filter((student) => grade === 'all' || student.grade === Number(grade)), [grade, students]);
   const eligibleCount = visibleStudents.filter((student) => !excluded.has(student.id) && (!preventDuplicate || !wonToday.has(student.id))).length;
 
-  function toggleExcluded(id: string) {
-    setExcluded((current) => {
-      const next = new Set(current);
-      if (next.has(id)) next.delete(id); else next.add(id);
-      return next;
-    });
+  async function toggleExcluded(id: string) {
+    if (savingExclusions.has(id)) return;
+    const shouldExclude = !excluded.has(id);
+    setExcluded((current) => { const next = new Set(current); if (shouldExclude) next.add(id); else next.delete(id); return next; });
+    setSavingExclusions((current) => new Set(current).add(id));
+    const result = await setRandomDrawExclusion(id, shouldExclude);
+    setSavingExclusions((current) => { const next = new Set(current); next.delete(id); return next; });
+    if (!result.ok) {
+      setExcluded((current) => { const next = new Set(current); if (shouldExclude) next.delete(id); else next.add(id); return next; });
+    }
+    setMessage(result.message);
+  }
+
+  async function clearExcluded() {
+    if (!excluded.size) return;
+    const previous = new Set(excluded);
+    setExcluded(new Set());
+    const result = await clearRandomDrawExclusions();
+    if (!result.ok) setExcluded(previous);
+    setMessage(result.message);
   }
 
   function openDrawWindow() {
@@ -45,8 +61,8 @@ export function RandomDrawMachine({ students, todayWinnerIds }: { students: Draw
         <aside className="random-draw-controls">
           <label className="random-control-label">학년 선택<select value={grade} onChange={(event) => setGrade(event.target.value)}><option value="all">전체 학년</option>{[1,2,3,4,5,6].map((value) => <option key={value} value={value}>{value}학년</option>)}</select></label>
           <label className="random-switch"><input type="checkbox" checked={preventDuplicate} onChange={(event) => setPreventDuplicate(event.target.checked)}/><span><b>같은 날 중복 당첨 방지</b><small>오늘 당첨된 학생은 다시 뽑지 않아요.</small></span></label>
-          <div className="random-exclusion-heading"><div><b>제외 LIST</b><small>{excluded.size}명 제외 중</small></div><button type="button" onClick={() => setExcluded(new Set())} disabled={!excluded.size}>전체 해제</button></div>
-          <div className="random-exclusion-list">{visibleStudents.map((student) => <label key={student.id} className={excluded.has(student.id) ? 'excluded' : ''}><input type="checkbox" checked={excluded.has(student.id)} onChange={() => toggleExcluded(student.id)}/><span>{student.grade}학년</span><b>{student.fullName}</b>{wonToday.has(student.id) ? <em>오늘 당첨</em> : null}</label>)}</div>
+          <div className="random-exclusion-heading"><div><b>제외 LIST</b><small>{excluded.size}명 제외 중 · 자동 저장</small></div><button type="button" onClick={clearExcluded} disabled={!excluded.size}>전체 해제</button></div>
+          <div className="random-exclusion-list">{visibleStudents.map((student) => <label key={student.id} className={excluded.has(student.id) ? 'excluded' : ''}><input type="checkbox" checked={excluded.has(student.id)} disabled={savingExclusions.has(student.id)} onChange={() => toggleExcluded(student.id)}/><span>{student.grade}학년</span><b>{student.fullName}</b>{savingExclusions.has(student.id) ? <em>저장 중</em> : wonToday.has(student.id) ? <em>오늘 당첨</em> : null}</label>)}</div>
         </aside>
         <section className="random-draw-launch-card">
           <div className="random-draw-launch-visual" aria-hidden="true"><span>🎣</span><i>🐟</i></div><p>DRAW DISPLAY</p><h2>추첨 준비가 끝났어요!</h2>

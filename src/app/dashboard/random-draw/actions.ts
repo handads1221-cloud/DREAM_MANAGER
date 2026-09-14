@@ -7,6 +7,43 @@ export type DrawResult =
   | { ok: true; winner: { id: string; fullName: string; grade: number }; message: string }
   | { ok: false; message: string };
 
+export type ExclusionResult = { ok: boolean; message: string };
+
+const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+async function getAdminContext() {
+  const supabase = await createClient();
+  const { data: claimsData } = await supabase.auth.getClaims();
+  const userId = claimsData?.claims?.sub;
+  if (!userId) return null;
+  const { data: profile } = await supabase.from('profiles').select('role, is_active').eq('id', userId).maybeSingle();
+  if (!profile?.is_active || profile.role !== 'admin') return null;
+  return { supabase, userId };
+}
+
+export async function setRandomDrawExclusion(studentId: string, excluded: boolean): Promise<ExclusionResult> {
+  const context = await getAdminContext();
+  if (!context) return { ok: false, message: '관리자 로그인 상태를 확인해 주세요.' };
+  if (!uuidPattern.test(studentId)) return { ok: false, message: '저장할 학생을 확인하지 못했습니다.' };
+
+  const query = excluded
+    ? context.supabase.from('random_draw_exclusions').upsert({ user_id: context.userId, student_id: studentId }, { onConflict: 'user_id,student_id', ignoreDuplicates: true })
+    : context.supabase.from('random_draw_exclusions').delete().eq('user_id', context.userId).eq('student_id', studentId);
+  const { error } = await query;
+  if (error) return { ok: false, message: `제외 설정을 저장하지 못했습니다. (${error.message})` };
+  revalidatePath('/dashboard/random-draw');
+  return { ok: true, message: excluded ? '제외 명단에 저장했습니다.' : '제외 명단에서 해제했습니다.' };
+}
+
+export async function clearRandomDrawExclusions(): Promise<ExclusionResult> {
+  const context = await getAdminContext();
+  if (!context) return { ok: false, message: '관리자 로그인 상태를 확인해 주세요.' };
+  const { error } = await context.supabase.from('random_draw_exclusions').delete().eq('user_id', context.userId);
+  if (error) return { ok: false, message: `제외 명단을 초기화하지 못했습니다. (${error.message})` };
+  revalidatePath('/dashboard/random-draw');
+  return { ok: true, message: '저장된 제외 명단을 모두 해제했습니다.' };
+}
+
 export async function drawRandomStudent(formData: FormData): Promise<DrawResult> {
   const supabase = await createClient();
   const { data: claimsData } = await supabase.auth.getClaims();
