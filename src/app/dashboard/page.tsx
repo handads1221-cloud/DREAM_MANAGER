@@ -46,7 +46,7 @@ export default async function DashboardPage() {
   const copy = roleCopy[role];
   let stats: { label: string; value: string; href: string; tone: string; detail?: string }[];
   let adminOverview: null | { weeks: { date: string; count: number; current: boolean }[]; upcomingPlans: { id: string; schedule_date: string; schedule_time: string | null; title: string }[]; previousMonth: number; currentMonth: number; previousBirthdays: { name: string; role: string; date: string }[]; currentBirthdays: { name: string; role: string; date: string }[] } = null;
-  if (role === 'admin') {
+  if (role === 'admin' || role === 'teacher') {
     const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Seoul' }).format(new Date());
     const currentMonth = Number(new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Seoul', month: 'numeric' }).format(new Date()));
     const previousMonth = currentMonth === 1 ? 12 : currentMonth - 1;
@@ -81,18 +81,15 @@ export default async function DashboardPage() {
     const people = [...(studentBirthdays ?? []).map((item) => ({ name: item.full_name, role: '학생', date: item.birth_date! })), ...(teacherBirthdays ?? []).map((item) => ({ name: item.full_name, role: '선생님', date: item.birth_date! }))];
     const inMonth = (month: number) => people.filter((person) => Number(person.date.slice(5, 7)) === month).sort((a, b) => a.date.slice(5).localeCompare(b.date.slice(5)));
     const latest = weeks.at(-1);
-    stats = [{ label: '재학생', value: `${studentCount ?? 0}명`, href: '/dashboard/students', tone: 'mint' }, { label: '이번 주 출석', value: `${latest?.count ?? 0}명`, detail: latest ? `${Number(latest.date.slice(5,7))}월 ${Number(latest.date.slice(8,10))}일` : '예배일 미등록', href: '/dashboard/attendance', tone: 'pink' }];
+    stats = [{ label: '재학생', value: `${studentCount ?? 0}명`, href: role === 'admin' ? '/dashboard/students' : '/dashboard/attendance', tone: 'mint' }, { label: '이번 주 출석', value: `${latest?.count ?? 0}명`, detail: latest ? `${Number(latest.date.slice(5,7))}월 ${Number(latest.date.slice(8,10))}일` : '예배일 미등록', href: '/dashboard/attendance', tone: 'pink' }];
     adminOverview = { weeks, upcomingPlans: upcomingPlans ?? [], previousMonth, currentMonth, previousBirthdays: inMonth(previousMonth), currentBirthdays: inMonth(currentMonth) };
-  } else if (role === 'teacher') {
-    const [{ count: assignedCount }, { count: awardedCount }] = await Promise.all([supabase.from('students').select('*', { count: 'exact', head: true }).eq('is_active', true), supabase.from('point_transactions').select('*', { count: 'exact', head: true }).eq('awarded_by', userId)]);
-    stats = [{ label: '담당 학생', value: `${assignedCount ?? 0}명`, href: '/dashboard/attendance', tone: 'mint' }, { label: '출석 등록', value: '명단 열기', href: '/dashboard/attendance', tone: 'blue' }, { label: '보석 지급 내역', value: `${awardedCount ?? 0}건`, href: '/dashboard/points', tone: 'yellow' }];
   } else if (role === 'parent') {
     const { data: children } = await supabase.from('students').select('id').eq('is_active', true); const childIds = (children ?? []).map(child => child.id);
     const [{ count: attendanceCount }, { data: balances }, { count: inquiryCount }] = await Promise.all([childIds.length ? supabase.from('attendance_records').select('*', { count: 'exact', head: true }).in('student_id', childIds).in('status', ['present','late']) : Promise.resolve({ count: 0 }), childIds.length ? supabase.from('student_point_balances').select('balance').in('student_id', childIds) : Promise.resolve({ data: [] }), supabase.from('inquiries').select('*', { count: 'exact', head: true }).eq('parent_id', userId)]);
     const balance = (balances ?? []).reduce((sum, item) => sum + Number(item.balance), 0);
     stats = [{ label: '연결된 자녀', value: `${childIds.length}명`, href: '#children', tone: 'mint' }, { label: '자녀 출석 기록', value: `${attendanceCount ?? 0}회`, href: '#attendance', tone: 'blue' }, { label: '자녀 보석 합계', value: `${balance}개`, href: '#points', tone: 'yellow' }, { label: '문의', value: `${inquiryCount ?? 0}건`, href: '#inquiry', tone: 'pink' }];
   } else if (role === 'accountant') {
-    const [{ data: ledger }, { count: pendingCount }] = await Promise.all([supabase.from('finance_ledger').select('entry_type, amount'), supabase.from('payment_requests').select('*', { count: 'exact', head: true }).in('status', ['pending','reviewing','approved'])]);
+    const [{ data: ledger }, { count: pendingCount }] = await Promise.all([supabase.from('finance_ledger').select('entry_type, amount').is('cancelled_at', null), supabase.from('payment_requests').select('*', { count: 'exact', head: true }).in('status', ['pending','reviewing','approved'])]);
     const balance = (ledger ?? []).reduce((sum, item) => sum + (item.entry_type === 'income' ? Number(item.amount) : -Number(item.amount)), 0);
     stats = [{ label: '현재 잔액', value: `${balance.toLocaleString('ko-KR')}원`, href: '/dashboard/finance', tone: 'mint' }, { label: '처리할 요청', value: `${pendingCount ?? 0}건`, href: '/dashboard/finance/requests', tone: 'pink' }];
   } else {
