@@ -1,6 +1,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { signIn } from './actions';
+import { InstallShortcutButton } from './install-shortcut-button';
 
 export default async function LoginPage({ searchParams }: PageProps<'/login'>) {
   const params = await searchParams;
@@ -34,6 +35,7 @@ export default async function LoginPage({ searchParams }: PageProps<'/login'>) {
             <button type="submit">로그인</button>
           </form>
           <Link href="/signup" className="signup-link-button">처음이신가요? 가입 신청하기</Link>
+          <InstallShortcutButton />
           <small className="auth-help">가입 후 이메일 인증과 관리자 승인이 완료되면 계정별 홈을 이용할 수 있습니다.</small>
         </div>
       </section>

@@ -56,7 +56,7 @@ export async function signUp(formData: FormData) {
   const requestHeaders = await headers();
   const origin = requestHeaders.get('origin') ?? 'https://dream-manager.vercel.app';
   const supabase = await createClient();
-  const { error } = await supabase.auth.signUp({
+  const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
@@ -69,6 +69,10 @@ export async function signUp(formData: FormData) {
     const message = getSignUpErrorMessage(error);
     redirect(`/signup?error=${encodeURIComponent(message)}`);
   }
+
+  // Email confirmation settings can create a temporary session immediately.
+  // Clear only this device's session so a completed request always returns to login.
+  if (data.session) await supabase.auth.signOut({ scope: 'local' });
 
   redirect(`/login?message=${encodeURIComponent('가입 신청이 접수되었습니다. 이메일 인증 후 관리자 승인을 기다려 주세요.')}`);
 }
