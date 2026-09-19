@@ -101,7 +101,7 @@ export default async function DashboardPage() {
     const { data: children } = await supabase.from('students').select('id').eq('is_active', true); const childIds = (children ?? []).map(child => child.id);
     const [{ count: attendanceCount }, { data: balances }, { count: inquiryCount }] = await Promise.all([childIds.length ? supabase.from('attendance_records').select('*', { count: 'exact', head: true }).in('student_id', childIds).in('status', ['present','late']) : Promise.resolve({ count: 0 }), childIds.length ? supabase.from('student_point_balances').select('balance').in('student_id', childIds) : Promise.resolve({ data: [] }), supabase.from('inquiries').select('*', { count: 'exact', head: true }).eq('parent_id', userId)]);
     const balance = (balances ?? []).reduce((sum, item) => sum + Number(item.balance), 0);
-    stats = [{ label: '연결된 자녀', value: `${childIds.length}명`, href: '#children', tone: 'mint' }, { label: '자녀 출석 기록', value: `${attendanceCount ?? 0}회`, href: '#attendance', tone: 'blue' }, { label: '자녀 보석 합계', value: `${balance}개`, href: '#points', tone: 'yellow' }, { label: '문의', value: `${inquiryCount ?? 0}건`, href: '#inquiry', tone: 'pink' }];
+    stats = [{ label: '연결된 자녀', value: `${childIds.length}명`, href: '/dashboard/children', tone: 'mint' }, { label: '자녀 출석 기록', value: `${attendanceCount ?? 0}회`, href: '/dashboard/children', tone: 'blue' }, { label: '자녀 보석 합계', value: `${balance}개`, href: '/dashboard/children', tone: 'yellow' }, { label: '문의', value: `${inquiryCount ?? 0}건`, href: '#inquiry', tone: 'pink' }];
   } else if (role === 'accountant') {
     const [{ data: ledger }, { count: pendingCount }] = await Promise.all([supabase.from('finance_ledger').select('entry_type, amount').is('cancelled_at', null), supabase.from('payment_requests').select('*', { count: 'exact', head: true }).in('status', ['pending','reviewing','approved'])]);
     const balance = (ledger ?? []).reduce((sum, item) => sum + (item.entry_type === 'income' ? Number(item.amount) : -Number(item.amount)), 0);
@@ -124,7 +124,7 @@ export default async function DashboardPage() {
     {role !== 'student' && <section className="role-home-panel"><div><p className="eyebrow">QUICK START</p><h2>{copy.title}</h2><span>현재 계정 권한에 맞는 기능만 표시됩니다.</span></div><div className="role-quick-links">
       {role === 'admin' && <><Link href="/dashboard/finance">회계장부</Link><Link href="/dashboard/finance/requests">결제요청 관리</Link><Link href="/dashboard/accounts">가입 승인</Link><Link href="/dashboard/relationships">계정·가족·담당 연결</Link><Link href="/dashboard/students">학생명단관리</Link><Link href="/dashboard/attendance">출석·QR 관리</Link><Link href="/dashboard/plans">계획표</Link><Link href="/dashboard/points">드림보석 관리</Link><Link href="/dashboard/notices">공지게시판 관리</Link></>}
       {role === 'teacher' && <><Link href="/dashboard/attendance">대리 출석등록</Link><Link href="/dashboard/plans">계획표</Link><Link href="/dashboard/points">드림보석 지급</Link><Link href="/dashboard/notices">공지게시판</Link><Link href="#contacts">학생·부모 연락처</Link></>}
-      {role === 'parent' && <><Link href="#children">우리아이 정보</Link><Link href="/dashboard/notices">공지게시판</Link><Link href="#inquiry">관리자 문의</Link></>}
+      {role === 'parent' && <><Link href="/dashboard/children">우리아이 정보</Link><Link href="/dashboard/notices">공지게시판</Link><Link href="#inquiry">관리자 문의</Link></>}
       {role === 'accountant' && <><Link href="/dashboard/finance">회계장부</Link><Link href="/dashboard/finance/requests">결제요청 관리</Link></>}
     </div></section>}
   </DashboardShell>;
