@@ -22,8 +22,9 @@ function AttendanceChart({ weeks }: { weeks: { date: string; count: number; curr
   return <article className="attendance-chart-card"><div><p className="eyebrow">ATTENDANCE TREND</p><h2>최근 4주 출석</h2></div><div className="attendance-bars">{weeks.map((week) => <div key={week.date} className={week.current ? 'current' : ''}><strong>{week.count}명</strong><span><i style={{ height: `${Math.max(week.count ? 12 : 4, (week.count / max) * 100)}%` }} /></span><small>{Number(week.date.slice(5,7))}/{Number(week.date.slice(8,10))}{week.current ? ' 이번주' : ''}</small></div>)}{weeks.length === 0 && <p>출석 기록이 없습니다.</p>}</div></article>;
 }
 
-function ConsecutiveAbsenceCard({ students }: { students: string[] }) {
-  return <article className="absence-streak-card"><div><p className="eyebrow">ATTENDANCE CHECK</p><h2>3주 연속 결석</h2><span>최근 3개 주일에 출석·지각 기록이 없는 재학생</span></div><strong>{students.length}<small>명</small></strong><div className="absence-student-list">{students.map((name) => <span key={name}>{name}</span>)}{students.length === 0 && <p>3주 연속 결석한 학생이 없습니다.</p>}</div></article>;
+function ConsecutiveAbsenceCard({ students }: { students: { name: string; grade: number }[] }) {
+  const gradeGroups = Array.from({ length: 6 }, (_, index) => ({ grade: index + 1, students: students.filter((student) => student.grade === index + 1) })).filter((group) => group.students.length > 0);
+  return <article className="absence-streak-card"><div><p className="eyebrow">ATTENDANCE CHECK</p><h2>3주 연속 결석</h2><span>최근 3개 주일에 출석·지각 기록이 없는 재학생</span></div><strong>{students.length}<small>명</small></strong><div className="absence-grade-list">{gradeGroups.map((group) => <section key={group.grade}><div><b>{group.grade}학년</b><small>{group.students.length}명</small></div><p>{group.students.map((student) => <span key={student.name}>{student.name}</span>)}</p></section>)}{students.length === 0 && <p className="absence-empty">3주 연속 결석한 학생이 없습니다.</p>}</div></article>;
 }
 
 function UpcomingPlans({ plans }: { plans: { id: string; schedule_date: string; schedule_time: string | null; title: string }[] }) {
@@ -50,7 +51,7 @@ export default async function DashboardPage() {
   const assignedRoles = (assignedRoleRows ?? []).map((row) => row.role as AppRole);
   const copy = roleCopy[role];
   let stats: { label: string; value: string; href: string; tone: string; detail?: string }[];
-  let adminOverview: null | { weeks: { date: string; count: number; current: boolean }[]; upcomingPlans: { id: string; schedule_date: string; schedule_time: string | null; title: string }[]; previousMonth: number; currentMonth: number; previousBirthdays: { name: string; role: string; date: string }[]; currentBirthdays: { name: string; role: string; date: string }[]; consecutiveAbsences: string[] } = null;
+  let adminOverview: null | { weeks: { date: string; count: number; current: boolean }[]; upcomingPlans: { id: string; schedule_date: string; schedule_time: string | null; title: string }[]; previousMonth: number; currentMonth: number; previousBirthdays: { name: string; role: string; date: string }[]; currentBirthdays: { name: string; role: string; date: string }[]; consecutiveAbsences: { name: string; grade: number }[] } = null;
   let studentHighlights: null | { gems: number; attendance: number } = null;
   let studentPhotoUrl: string | null = null;
   if (role === 'admin' || role === 'teacher') {
@@ -66,7 +67,7 @@ export default async function DashboardPage() {
       return sunday.toISOString().slice(0, 10);
     });
     const [{ data: activeStudents }, { data: events }, { data: teacherRoles }, { data: upcomingPlans }] = await Promise.all([
-      supabase.from('students').select('id,full_name,birth_date').eq('is_active', true).order('full_name'),
+      supabase.from('students').select('id,full_name,grade,birth_date').eq('is_active', true).order('grade').order('full_name'),
       supabase.from('attendance_events').select('id, service_date').gte('service_date', sundayDates[0]).lte('service_date', sundayDates[3]),
       supabase.from('user_roles').select('user_id').eq('role', 'teacher'),
       supabase.from('weekly_plans').select('id,schedule_date,schedule_time,title').gte('schedule_date', today).order('schedule_date').order('schedule_time').limit(5),
@@ -94,7 +95,7 @@ export default async function DashboardPage() {
     const inMonth = (month: number) => people.filter((person) => Number(person.date.slice(5, 7)) === month).sort((a, b) => a.date.slice(5).localeCompare(b.date.slice(5)));
     const latest = weeks.at(-1);
     const recentThreeSundays = sundayDates.slice(-3);
-    const consecutiveAbsences = (activeStudents ?? []).filter((student) => recentThreeSundays.every((date) => !attendedDatesByStudent.get(student.id)?.has(date))).map((student) => student.full_name);
+    const consecutiveAbsences = (activeStudents ?? []).filter((student) => recentThreeSundays.every((date) => !attendedDatesByStudent.get(student.id)?.has(date))).map((student) => ({ name: student.full_name, grade: student.grade }));
     stats = [{ label: '재학생', value: `${activeStudents?.length ?? 0}명`, href: role === 'admin' ? '/dashboard/students' : '/dashboard/attendance', tone: 'mint' }, { label: '이번 주 출석', value: `${latest?.count ?? 0}명`, detail: latest ? `${Number(latest.date.slice(5,7))}월 ${Number(latest.date.slice(8,10))}일` : '예배일 미등록', href: '/dashboard/attendance', tone: 'pink' }];
     adminOverview = { weeks, upcomingPlans: upcomingPlans ?? [], previousMonth, currentMonth, previousBirthdays: inMonth(previousMonth), currentBirthdays: inMonth(currentMonth), consecutiveAbsences };
   } else if (role === 'parent') {
