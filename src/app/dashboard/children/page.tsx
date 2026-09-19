@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server';
 import { DashboardShell } from '../dashboard-shell';
 
 type AttendanceStatus = 'present' | 'late' | 'absent' | 'excused';
+type TeacherProfile = { id: string; full_name: string; phone: string | null; email: string | null; photo_path: string | null; is_active: boolean };
 
 const statusCopy: Record<AttendanceStatus, string> = {
   present: '출석',
@@ -42,9 +43,15 @@ export default async function ParentChildrenPage() {
     : [{ data: [] }, { data: [] }, { data: [] }];
 
   const eventIds = [...new Set((attendanceRows ?? []).map((row) => row.event_id))];
-  const { data: events } = eventIds.length
-    ? await supabase.from('attendance_events').select('id, service_date, title').in('id', eventIds)
-    : { data: [] };
+  const grades = [...new Set((students ?? []).map((student) => student.grade))];
+  const [{ data: events }, { data: teacherAssignments }] = await Promise.all([
+    eventIds.length
+      ? supabase.from('attendance_events').select('id, service_date, title').in('id', eventIds)
+      : Promise.resolve({ data: [] }),
+    grades.length
+      ? supabase.from('teacher_assignments').select('teacher_id, grade, class_name, profiles!teacher_assignments_teacher_id_fkey(id, full_name, phone, email, photo_path, is_active)').eq('school_year', new Date().getFullYear()).in('grade', grades)
+      : Promise.resolve({ data: [] }),
+  ]);
   const eventById = new Map((events ?? []).map((event) => [event.id, event]));
   const balanceByStudent = new Map((balances ?? []).map((balance) => [balance.student_id, Number(balance.balance)]));
   const attendanceByStudent = new Map<string, typeof attendanceRows>();
@@ -54,7 +61,16 @@ export default async function ParentChildrenPage() {
     attendanceByStudent.set(row.student_id, current);
   }
 
-  const photoPaths = [...new Set((students ?? []).map((student) => student.photo_path).filter((path): path is string => Boolean(path)))];
+  const teacherProfiles = new Map<string, TeacherProfile>();
+  for (const assignment of teacherAssignments ?? []) {
+    const relatedProfile = Array.isArray(assignment.profiles) ? assignment.profiles[0] : assignment.profiles;
+    const teacher = relatedProfile as TeacherProfile | null;
+    if (teacher?.is_active) teacherProfiles.set(teacher.id, teacher);
+  }
+  const photoPaths = [...new Set([
+    ...(students ?? []).map((student) => student.photo_path),
+    ...Array.from(teacherProfiles.values(), (teacher) => teacher.photo_path),
+  ].filter((path): path is string => Boolean(path)))];
   const { data: signedPhotos } = photoPaths.length
     ? await supabase.storage.from('face-photos').createSignedUrls(photoPaths, 3600)
     : { data: [] };
@@ -84,6 +100,11 @@ export default async function ParentChildrenPage() {
           .filter((date): date is string => Boolean(date))
           .sort((a, b) => b.localeCompare(a))[0];
         const photoUrl = student.photo_path ? photoUrlByPath.get(student.photo_path) : null;
+        const teachers = [...new Map((teacherAssignments ?? [])
+          .filter((assignment) => assignment.grade === student.grade && (assignment.class_name === '전체' || assignment.class_name === (student.class_name ?? '전체')))
+          .map((assignment) => [assignment.teacher_id, { assignment, teacher: teacherProfiles.get(assignment.teacher_id) }]))
+          .values()]
+          .filter((item): item is { assignment: NonNullable<typeof teacherAssignments>[number]; teacher: TeacherProfile } => Boolean(item.teacher));
 
         return <article className="parent-child-card" key={student.id}>
           <header className="parent-child-profile">
@@ -105,6 +126,16 @@ export default async function ParentChildrenPage() {
               <b className={`status-${record.status}`}>{statusCopy[record.status as AttendanceStatus] ?? record.status}</b>
             </div>)}
             {recentRecords.length === 0 && <p>아직 등록된 출석 기록이 없습니다.</p>}
+          </section>
+
+          <section className="parent-child-teachers">
+            <div><h3>담당 선생님</h3><span>{student.grade}학년{student.class_name ? ` ${student.class_name}반` : ''}</span></div>
+            {teachers.map(({ assignment, teacher }) => <article key={teacher.id}>
+              <div className="parent-teacher-avatar">{teacher.photo_path && photoUrlByPath.get(teacher.photo_path) ? <Image src={photoUrlByPath.get(teacher.photo_path)!} alt={`${teacher.full_name} 선생님 얼굴 사진`} width={48} height={48} unoptimized /> : <span>{teacher.full_name.slice(0, 1)}</span>}</div>
+              <div><strong>{teacher.full_name} 선생님</strong><small>{assignment.grade}학년 {assignment.class_name === '전체' ? '전체 담당' : `${assignment.class_name}반 담당`}</small></div>
+              <div className="parent-teacher-contact">{teacher.phone ? <a href={`tel:${teacher.phone}`}>{teacher.phone}</a> : <span>연락처 미등록</span>}{teacher.email && <a href={`mailto:${teacher.email}`}>{teacher.email}</a>}</div>
+            </article>)}
+            {teachers.length === 0 && <p>아직 담당 선생님이 배정되지 않았습니다.</p>}
           </section>
         </article>;
       })}

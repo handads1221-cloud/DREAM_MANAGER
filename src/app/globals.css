@@ -96,6 +96,15 @@
 .parent-attendance-row b.status-absent { background:#fff0ef; color:#ad463e; }
 .parent-attendance-row b.status-excused { background:#eef4ff; color:#476da8; }
 .parent-attendance-history > p { margin:0; padding:20px 0 5px; color:var(--muted); font-size:10px; text-align:center; }
+.parent-child-teachers { padding:17px 20px 20px; border-top:1px solid var(--line); background:#fbfdfc; }
+.parent-child-teachers > div:first-child { margin-bottom:9px; display:flex; align-items:center; justify-content:space-between; gap:10px; }
+.parent-child-teachers h3 { margin:0; font-size:13px; }.parent-child-teachers > div:first-child > span { color:var(--muted); font-size:9px; }
+.parent-child-teachers > article { min-width:0; padding:10px 0; display:grid; grid-template-columns:48px minmax(100px,.8fr) minmax(120px,1fr); align-items:center; gap:10px; border-top:1px solid #edf1ef; }
+.parent-teacher-avatar { width:48px; height:48px; display:grid; place-items:center; overflow:hidden; border-radius:50%; background:#e9f5ff; color:#3978aa; font-size:15px; font-weight:900; }
+.parent-teacher-avatar img { width:100%; height:100%; object-fit:cover; }
+.parent-child-teachers article > div:nth-child(2) { min-width:0; display:grid; gap:4px; }.parent-child-teachers article strong { overflow:hidden; font-size:11px; text-overflow:ellipsis; white-space:nowrap; }.parent-child-teachers article small { color:var(--muted); font-size:8px; }
+.parent-teacher-contact { min-width:0; display:grid; justify-items:end; gap:3px; }.parent-teacher-contact a,.parent-teacher-contact span { max-width:100%; overflow:hidden; color:#087b57; font-size:8px; text-overflow:ellipsis; white-space:nowrap; text-decoration:none; }.parent-teacher-contact a:hover { text-decoration:underline; }
+.parent-child-teachers > p { margin:0; padding:18px 0 4px; color:var(--muted); font-size:10px; text-align:center; }
 .parent-children-empty { min-height:360px; padding:35px; display:grid; place-items:center; align-content:center; gap:10px; border:1px solid var(--line); border-radius:22px; background:#fff; text-align:center; }
 .parent-children-empty > span { font-size:48px; }.parent-children-empty h2 { margin:0; font-size:20px; }.parent-children-empty p { max-width:430px; margin:0; color:var(--muted); font-size:11px; line-height:1.7; }
 .parent-children-empty a { margin-top:7px; padding:11px 16px; border-radius:11px; background:var(--mint); color:#fff; font-size:10px; font-weight:850; text-decoration:none; }
@@ -105,6 +114,7 @@
   .parent-child-card { border-radius:18px; }.parent-child-profile { padding:16px 14px; }.parent-child-avatar { width:60px; height:60px; flex-basis:60px; }.parent-child-profile h2 { font-size:19px; }
   .parent-child-summary { padding:10px; gap:5px; }.parent-child-summary > div { min-height:72px; padding:9px 4px; border-radius:11px; }.parent-child-summary strong { font-size:18px; }.parent-child-summary strong.date { font-size:11px; }
   .parent-attendance-history { padding:15px 14px 17px; }.parent-attendance-row { grid-template-columns:68px minmax(0,1fr) 52px; gap:5px; font-size:9px; }.parent-attendance-row b { padding:5px 6px; font-size:8px; }
+  .parent-child-teachers { padding:15px 14px 17px; }.parent-child-teachers > article { grid-template-columns:42px minmax(90px,1fr); }.parent-teacher-avatar { width:42px; height:42px; }.parent-teacher-contact { grid-column:2; justify-items:start; margin-top:-5px; }
 }
 
 .attendance-live-summary.compact { grid-template-columns: minmax(0,360px); margin-bottom: 9px; }
