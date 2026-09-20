@@ -77,6 +77,9 @@
 .parent-child-profile p { width:max-content; margin:0 0 4px; padding:4px 8px; border-radius:99px; background:#fff; color:#087b57; font-size:9px; font-weight:850; }
 .parent-child-profile h2 { margin:0 0 4px; font-size:22px; }
 .parent-child-profile > div:last-child > span { display:block; overflow:hidden; color:var(--muted); font-size:10px; text-overflow:ellipsis; white-space:nowrap; }
+.parent-child-account-info { padding:14px 20px; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px; border-top:1px solid #edf3f0; }
+.parent-child-account-info > div { min-width:0; display:grid; gap:3px; }.parent-child-account-info > div.wide { grid-column:1/-1; }
+.parent-child-account-info span { color:var(--muted); font-size:9px; font-weight:750; }.parent-child-account-info strong { overflow-wrap:anywhere; font-size:11px; }
 .parent-child-summary { padding:14px; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; border-top:1px solid #edf3f0; border-bottom:1px solid var(--line); }
 .parent-child-summary > div { min-width:0; min-height:82px; padding:12px 10px; display:grid; align-content:center; gap:7px; border-radius:14px; background:#f5f8f6; text-align:center; }
 .parent-child-summary > div.gems { background:#fff8df; }
@@ -112,6 +115,7 @@
 @media(max-width:560px) {
   .parent-children-heading { align-items:flex-start; }.parent-children-heading h1 { font-size:27px; }.parent-children-heading > div > span { font-size:10px; }.parent-children-heading > strong { font-size:23px; }
   .parent-child-card { border-radius:18px; }.parent-child-profile { padding:16px 14px; }.parent-child-avatar { width:60px; height:60px; flex-basis:60px; }.parent-child-profile h2 { font-size:19px; }
+  .parent-child-account-info { padding:12px 14px; gap:8px; }
   .parent-child-summary { padding:10px; gap:5px; }.parent-child-summary > div { min-height:72px; padding:9px 4px; border-radius:11px; }.parent-child-summary strong { font-size:18px; }.parent-child-summary strong.date { font-size:11px; }
   .parent-attendance-history { padding:15px 14px 17px; }.parent-attendance-row { grid-template-columns:68px minmax(0,1fr) 52px; gap:5px; font-size:9px; }.parent-attendance-row b { padding:5px 6px; font-size:8px; }
   .parent-child-teachers { padding:15px 14px 17px; }.parent-child-teachers > article { grid-template-columns:42px minmax(90px,1fr); }.parent-teacher-avatar { width:42px; height:42px; }.parent-teacher-contact { grid-column:2; justify-items:start; margin-top:-3px; gap:4px; }.parent-teacher-contact a,.parent-teacher-contact span { padding:3px 0; font-size:12px; }

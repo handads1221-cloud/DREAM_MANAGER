@@ -36,7 +36,7 @@ export default async function ParentChildrenPage() {
 
   const [{ data: students }, { data: balances }, { data: attendanceRows }] = studentIds.length
     ? await Promise.all([
-        supabase.from('students').select('id, full_name, grade, class_name, school_name, photo_path').in('id', studentIds).eq('is_active', true).order('grade').order('full_name'),
+        supabase.from('students').select('id, profile_id, full_name, grade, class_name, school_name, phone, address, birth_date, gender, photo_path').in('id', studentIds).eq('is_active', true).order('grade').order('full_name'),
         supabase.from('student_point_balances').select('student_id, balance').in('student_id', studentIds),
         supabase.from('attendance_records').select('student_id, event_id, status, checked_at').in('student_id', studentIds).order('checked_at', { ascending: false }),
       ])
@@ -44,14 +44,19 @@ export default async function ParentChildrenPage() {
 
   const eventIds = [...new Set((attendanceRows ?? []).map((row) => row.event_id))];
   const grades = [...new Set((students ?? []).map((student) => student.grade))];
-  const [{ data: events }, { data: teacherAssignments }] = await Promise.all([
+  const childProfileIds = (students ?? []).map((student) => student.profile_id).filter((id): id is string => Boolean(id));
+  const [{ data: events }, { data: teacherAssignments }, { data: childAccounts }] = await Promise.all([
     eventIds.length
       ? supabase.from('attendance_events').select('id, service_date, title').in('id', eventIds)
       : Promise.resolve({ data: [] }),
     grades.length
       ? supabase.from('teacher_assignments').select('teacher_id, grade, class_name, profiles!teacher_assignments_teacher_id_fkey(id, full_name, phone, email, photo_path, is_active)').eq('school_year', new Date().getFullYear()).in('grade', grades)
       : Promise.resolve({ data: [] }),
+    childProfileIds.length
+      ? supabase.from('profiles').select('id, email, full_name').in('id', childProfileIds)
+      : Promise.resolve({ data: [] }),
   ]);
+  const accountByProfile = new Map((childAccounts ?? []).map((account) => [account.id, account]));
   const eventById = new Map((events ?? []).map((event) => [event.id, event]));
   const balanceByStudent = new Map((balances ?? []).map((balance) => [balance.student_id, Number(balance.balance)]));
   const attendanceByStudent = new Map<string, typeof attendanceRows>();
@@ -100,6 +105,7 @@ export default async function ParentChildrenPage() {
           .filter((date): date is string => Boolean(date))
           .sort((a, b) => b.localeCompare(a))[0];
         const photoUrl = student.photo_path ? photoUrlByPath.get(student.photo_path) : null;
+        const childAccount = student.profile_id ? accountByProfile.get(student.profile_id) : null;
         const teachers = [...new Map((teacherAssignments ?? [])
           .filter((assignment) => assignment.grade === student.grade && (assignment.class_name === '전체' || assignment.class_name === (student.class_name ?? '전체')))
           .map((assignment) => [assignment.teacher_id, { assignment, teacher: teacherProfiles.get(assignment.teacher_id) }]))
@@ -111,6 +117,14 @@ export default async function ParentChildrenPage() {
             <div className="parent-child-avatar">{photoUrl ? <Image src={photoUrl} alt={`${student.full_name} 학생 얼굴 사진`} width={72} height={72} unoptimized /> : <span>{student.full_name.slice(0, 1)}</span>}</div>
             <div><p>{relationshipByStudent.get(student.id) ?? '자녀'}</p><h2>{student.full_name}</h2><span>{student.grade}학년{student.class_name ? ` ${student.class_name}반` : ''}{student.school_name ? ` · ${student.school_name}` : ''}</span></div>
           </header>
+
+          <section className="parent-child-account-info">
+            <div><span>가입 아이디</span><strong>{childAccount?.email ?? '계정 미연결'}</strong></div>
+            <div><span>생년월일</span><strong>{student.birth_date ? new Date(`${student.birth_date}T00:00:00`).toLocaleDateString('ko-KR') : '미등록'}</strong></div>
+            <div><span>성별</span><strong>{student.gender || '미등록'}</strong></div>
+            <div><span>연락처</span><strong>{student.phone || '미등록'}</strong></div>
+            <div className="wide"><span>주소</span><strong>{student.address || '미등록'}</strong></div>
+          </section>
 
           <div className="parent-child-summary">
             <div className="gems"><span>드림보석</span><strong>{balanceByStudent.get(student.id) ?? 0}<small>개</small></strong></div>
