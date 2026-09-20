@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState } from 'react';
+import { useActionState, useState } from 'react';
 import { useFormStatus } from 'react-dom';
 import { signUp, type SignupState } from './actions';
 
@@ -11,6 +11,7 @@ function SubmitButton() {
 
 export function SignupForm() {
   const [state, formAction] = useActionState<SignupState, FormData>(signUp, {});
+  const [requestedRole, setRequestedRole] = useState('parent');
   return <form action={formAction} className="auth-form signup-form">
     {state.error && <p className="form-alert error" role="alert">{state.error}</p>}
     <label htmlFor="signup-login-id">아이디 *</label>
@@ -18,11 +19,10 @@ export function SignupForm() {
     <label htmlFor="signup-name">이름 *</label>
     <input id="signup-name" name="full_name" type="text" autoComplete="name" maxLength={50} placeholder="이름" required />
     <label htmlFor="signup-role">가입 유형 <small>(관리자 참고용)</small></label>
-    <select id="signup-role" name="requested_role" defaultValue="parent" required>
+    <select id="signup-role" name="requested_role" value={requestedRole} onChange={(event) => setRequestedRole(event.target.value)} required>
       <option value="parent">부모님</option><option value="student">학생</option><option value="teacher">선생님</option><option value="accountant">회계담당자</option>
     </select>
-    <label htmlFor="teacher-invite-code">선생님 초대코드 <small>(선생님만 입력)</small></label>
-    <input id="teacher-invite-code" name="teacher_invite_code" type="text" autoComplete="off" placeholder="관리자에게 받은 1회용 코드" />
+    {requestedRole === 'teacher' && <><label htmlFor="teacher-invite-code">선생님 초대코드 *</label><input id="teacher-invite-code" name="teacher_invite_code" type="text" autoComplete="off" minLength={6} placeholder="관리자에게 받은 1회용 코드" required /></>}
     <p className="form-help">부모님·학생은 바로 가입됩니다. 선생님은 1회용 초대코드가 필요하며, 회계담당자는 관리자 승인 후 이용할 수 있습니다.</p>
     <div className="signup-two-columns">
       <label><span>비밀번호 *</span><input name="password" type="password" autoComplete="new-password" minLength={8} placeholder="문자 종류 제한 없이 8자 이상" aria-describedby="signup-password-help" required /></label>
