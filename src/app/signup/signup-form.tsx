@@ -13,15 +13,17 @@ export function SignupForm() {
   const [state, formAction] = useActionState<SignupState, FormData>(signUp, {});
   return <form action={formAction} className="auth-form signup-form">
     {state.error && <p className="form-alert error" role="alert">{state.error}</p>}
-    <label htmlFor="signup-email">이메일 *</label>
-    <input id="signup-email" name="email" type="email" autoComplete="email" placeholder="example@email.com" required />
+    <label htmlFor="signup-login-id">아이디 *</label>
+    <input id="signup-login-id" name="login_id" type="text" autoComplete="username" minLength={3} maxLength={30} placeholder="공백 없이 3~30자" required />
     <label htmlFor="signup-name">이름 *</label>
     <input id="signup-name" name="full_name" type="text" autoComplete="name" maxLength={50} placeholder="이름" required />
     <label htmlFor="signup-role">가입 유형 <small>(관리자 참고용)</small></label>
-    <select id="signup-role" name="requested_role" defaultValue="unsure">
-      <option value="unsure">잘 모르겠어요</option><option value="parent">부모님</option><option value="student">학생</option><option value="teacher">선생님</option><option value="accountant">회계담당자</option>
+    <select id="signup-role" name="requested_role" defaultValue="parent" required>
+      <option value="parent">부모님</option><option value="student">학생</option><option value="teacher">선생님</option><option value="accountant">회계담당자</option>
     </select>
-    <p className="form-help">선택한 유형은 참고 정보이며, 실제 권한은 관리자가 승인할 때 확정합니다.</p>
+    <label htmlFor="teacher-invite-code">선생님 초대코드 <small>(선생님만 입력)</small></label>
+    <input id="teacher-invite-code" name="teacher_invite_code" type="text" autoComplete="off" placeholder="관리자에게 받은 1회용 코드" />
+    <p className="form-help">부모님·학생은 바로 가입됩니다. 선생님은 1회용 초대코드가 필요하며, 회계담당자는 관리자 승인 후 이용할 수 있습니다.</p>
     <div className="signup-two-columns">
       <label><span>비밀번호 *</span><input name="password" type="password" autoComplete="new-password" minLength={8} placeholder="문자 종류 제한 없이 8자 이상" aria-describedby="signup-password-help" required /></label>
       <label><span>비밀번호 확인 *</span><input name="password_confirm" type="password" autoComplete="new-password" minLength={8} placeholder="한 번 더 입력" required /></label>

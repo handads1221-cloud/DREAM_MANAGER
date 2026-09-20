@@ -11,14 +11,14 @@ export default function SignupPage() {
         <div className="auth-visual-copy">
           <span>청주신흥교회 드림 어린이부</span>
           <h1>우리 함께<br />시작해요</h1>
-          <p>가입 신청 후 관리자가 확인하여 부모·학생·선생님 권한을 연결합니다.</p>
+          <p>아이디와 계정 유형을 선택해 드림어린이부와 함께 시작해요.</p>
         </div>
       </section>
       <section className="auth-form-wrap signup-form-wrap">
         <div className="auth-card signup-card">
           <p className="eyebrow">CREATE ACCOUNT</p>
-          <h2>가입 신청</h2>
-          <p className="auth-description">이메일·이름·비밀번호만 입력해도 신청할 수 있습니다. 나머지는 나중에 추가할 수 있어요.</p>
+          <h2>회원가입</h2>
+          <p className="auth-description">아이디·이름·비밀번호와 계정 유형을 입력해 주세요.</p>
           <SignupForm />
           <p className="signup-login-link">이미 계정이 있나요? <Link href="/login">로그인</Link></p>
         </div>

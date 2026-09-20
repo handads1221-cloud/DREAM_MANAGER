@@ -49,6 +49,18 @@ export async function rejectRegistration(formData: FormData) {
   accountsRedirect('message', '가입 신청을 반려하고 사유를 저장했습니다.');
 }
 
+export async function createTeacherInvite(formData: FormData) {
+  const admin = await requireAdmin();
+  if (!admin) accountsRedirect('error', '관리자 권한을 확인할 수 없습니다.');
+  const code = String(formData.get('invite_code') ?? '').trim();
+  const label = String(formData.get('invite_label') ?? '').trim().slice(0, 60);
+  if (code.length < 6) accountsRedirect('error', '선생님 초대코드는 6자 이상 입력해 주세요.');
+  const { error } = await admin.supabase.rpc('admin_create_teacher_invite', { raw_code: code, invite_label: label || null });
+  if (error) accountsRedirect('error', '초대코드를 만들지 못했습니다. 이미 사용 중인 코드인지 확인해 주세요.');
+  revalidatePath('/dashboard/accounts');
+  accountsRedirect('message', `선생님 1회용 초대코드 “${code}”를 만들었습니다. 가입할 선생님에게 전달해 주세요.`);
+}
+
 export async function updateAccountRole(formData: FormData) {
   const admin = await requireAdmin();
   if (!admin) accountsRedirect('error', '관리자 권한을 확인할 수 없습니다.');

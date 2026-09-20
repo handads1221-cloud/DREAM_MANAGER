@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { DashboardShell } from '../dashboard-shell';
-import { approveRegistration, rejectRegistration, restoreAccount } from './actions';
+import { approveRegistration, createTeacherInvite, rejectRegistration, restoreAccount } from './actions';
 import { ActiveAccountManager, type ManagedAccount } from './active-account-manager';
 
 const roleLabel: Record<string, string> = { admin: '관리자', teacher: '선생님', parent: '부모님', student: '학생', accountant: '회계담당자' };
@@ -41,6 +41,7 @@ export default async function AccountsPage({ searchParams }: PageProps<'/dashboa
   return <DashboardShell profile={{ full_name: profile.full_name, role: 'admin' }} activeHref="/dashboard/accounts">
     <div className="account-page-heading"><div><p className="eyebrow">ACCOUNT MANAGEMENT</p><h1>가입·계정관리</h1><span>가입 승인, 권한 변경, 비밀번호 재설정과 탈퇴 계정을 관리합니다.</span></div><strong>승인 대기 {pending.length}건</strong></div>
     {message && <p className="form-alert success account-feedback">{message}</p>}{errorMessage && <p className="form-alert error account-feedback">{errorMessage}</p>}
+    <section className="approval-section"><h2>선생님 가입 초대코드</h2><form action={createTeacherInvite} className="rejection-form"><label>구분<input name="invite_label" maxLength={60} placeholder="예: 새 선생님 가입용" /></label><label>1회용 코드<input name="invite_code" minLength={6} placeholder="6자 이상" required /></label><button type="submit">초대코드 만들기</button></form><p className="form-help">코드는 한 명이 가입하면 자동으로 사용 완료됩니다. 화면에 표시된 코드를 해당 선생님에게 전달해 주세요.</p></section>
     <section className="approval-section"><h2>가입 승인 대기</h2>{pending.length === 0 ? <div className="account-empty">현재 승인 대기 중인 가입 신청이 없습니다.</div> : <div className="approval-list">{pending.map((request) => <article key={request.user_id} className="approval-card">
       <div className="approval-person"><span>{request.full_name.slice(0, 1)}</span><div><h3>{request.full_name}</h3><p>{request.email}</p></div></div>
       <dl><div><dt>희망 유형</dt><dd>{request.requested_role && request.requested_role !== 'unsure' ? roleLabel[request.requested_role] : '관리자 판단 요청'}</dd></div><div><dt>연락처</dt><dd>{request.phone || '미입력'}</dd></div><div><dt>주소</dt><dd>{request.address || '미입력'}</dd></div>{request.note && <div><dt>비고</dt><dd>{request.note}</dd></div>}</dl>

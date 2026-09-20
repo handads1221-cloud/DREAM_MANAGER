@@ -23,12 +23,12 @@ export default async function LoginPage({ searchParams }: PageProps<'/login'>) {
         <div className="auth-card">
           <p className="eyebrow">DREAM MANAGER</p>
           <h2>반가워요!</h2>
-          <p className="auth-description">가입한 이메일과 비밀번호로 로그인해 주세요.</p>
+          <p className="auth-description">가입한 아이디와 비밀번호로 로그인해 주세요.</p>
           {error && <p className="form-alert error">{error}</p>}
           {message && <p className="form-alert success">{message}</p>}
           <form action={signIn} className="auth-form">
-            <label htmlFor="loginId">이메일</label>
-            <input id="loginId" name="loginId" type="text" autoComplete="username" placeholder="example@email.com" required />
+            <label htmlFor="loginId">아이디</label>
+            <input id="loginId" name="loginId" type="text" autoComplete="username" placeholder="사용할 아이디" required />
             <label htmlFor="password">비밀번호</label>
             <input id="password" name="password" type="password" autoComplete="current-password" placeholder="비밀번호를 입력하세요" required />
             <label className="remember-login" htmlFor="rememberLogin"><input id="rememberLogin" name="rememberLogin" type="checkbox"/><span><b>이 기기에서 로그인 유지</b><small>개인 기기에서만 선택해 주세요.</small></span></label>
@@ -36,7 +36,7 @@ export default async function LoginPage({ searchParams }: PageProps<'/login'>) {
           </form>
           <Link href="/signup" className="signup-link-button">처음이신가요? 가입 신청하기</Link>
           <InstallShortcutButton />
-          <small className="auth-help">가입 후 이메일 인증과 관리자 승인이 완료되면 계정별 홈을 이용할 수 있습니다.</small>
+          <small className="auth-help">부모님·학생은 바로 가입되며, 선생님은 관리자 초대코드가 필요합니다.</small>
         </div>
       </section>
     </main>

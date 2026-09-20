@@ -3,12 +3,13 @@
 import { redirect } from 'next/navigation';
 import { cookies } from 'next/headers';
 import { createClient } from '@/lib/supabase/server';
+import { loginIdToAuthEmail } from '@/lib/login-id';
 
 export async function signIn(formData: FormData) {
   const loginId = String(formData.get('loginId') ?? '').trim();
   const email = loginId.includes('@')
     ? loginId.toLowerCase()
-    : `${loginId.toLowerCase()}@dream-manager.local`;
+    : loginIdToAuthEmail(loginId);
   const password = String(formData.get('password') ?? '');
   const rememberLogin = formData.get('rememberLogin') === 'on';
   const cookieStore = await cookies();
@@ -20,9 +21,13 @@ export async function signIn(formData: FormData) {
     ...(rememberLogin ? { maxAge: 60 * 60 * 24 * 365 } : {}),
   });
   const supabase = await createClient();
-  const { data: authData, error } = await supabase.auth.signInWithPassword({ email, password });
+  let { data: authData, error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error && !loginId.includes('@')) {
+    const legacy = await supabase.auth.signInWithPassword({ email: `${loginId.toLowerCase()}@dream-manager.local`, password });
+    authData = legacy.data; error = legacy.error;
+  }
 
-  if (error) redirect(`/login?error=${encodeURIComponent('이메일 또는 비밀번호를 확인해 주세요.')}`);
+  if (error) redirect(`/login?error=${encodeURIComponent('아이디 또는 비밀번호를 확인해 주세요.')}`);
   // signInWithPassword already returns the authenticated user. Reusing it avoids
   // an unnecessary second Auth/JWKS request on the login critical path.
   const userId = authData.user?.id;
