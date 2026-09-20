@@ -1,8 +1,9 @@
 'use server';
 
-import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
+
+export type SignupState = { error?: string };
 
 function getSignUpErrorMessage(error: { code?: string; message: string }) {
   const code = error.code ?? '';
@@ -39,7 +40,7 @@ function getSignUpErrorMessage(error: { code?: string; message: string }) {
   return `가입 신청을 완료하지 못했습니다. (${error.code ?? error.message})`;
 }
 
-export async function signUp(formData: FormData) {
+export async function signUp(_previousState: SignupState, formData: FormData): Promise<SignupState> {
   const email = String(formData.get('email') ?? '').trim().toLowerCase();
   const fullName = String(formData.get('full_name') ?? '').trim();
   const password = String(formData.get('password') ?? '');
@@ -47,32 +48,34 @@ export async function signUp(formData: FormData) {
   const phone = String(formData.get('phone') ?? '').trim();
   const address = String(formData.get('address') ?? '').trim();
   const note = String(formData.get('note') ?? '').trim();
+  const requestedRole = String(formData.get('requested_role') ?? 'unsure');
 
-  if (!email || !email.includes('@')) redirect(`/signup?error=${encodeURIComponent('올바른 이메일 주소를 입력해 주세요.')}`);
-  if (!fullName || fullName.length > 50) redirect(`/signup?error=${encodeURIComponent('이름은 1~50자로 입력해 주세요.')}`);
-  if (password.length < 8) redirect(`/signup?error=${encodeURIComponent('비밀번호는 8자 이상으로 설정해 주세요.')}`);
-  if (password !== passwordConfirm) redirect(`/signup?error=${encodeURIComponent('비밀번호 확인이 일치하지 않습니다.')}`);
+  if (!email || !email.includes('@')) return { error: '올바른 이메일 주소를 입력해 주세요.' };
+  if (!fullName || fullName.length > 50) return { error: '이름은 1~50자로 입력해 주세요.' };
+  if (password.length < 8) return { error: '비밀번호는 8자 이상으로 설정해 주세요.' };
+  if (password !== passwordConfirm) return { error: '비밀번호 확인이 일치하지 않습니다.' };
+  if (!['parent', 'student', 'teacher', 'accountant', 'unsure'].includes(requestedRole)) return { error: '가입 유형을 다시 선택해 주세요.' };
 
-  const requestHeaders = await headers();
-  const origin = requestHeaders.get('origin') ?? 'https://dream-manager.vercel.app';
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
-      emailRedirectTo: `${origin}/auth/confirm?next=/dashboard`,
-      data: { full_name: fullName, phone, address, note },
+      data: { full_name: fullName, phone, address, note, requested_role: requestedRole },
     },
   });
 
   if (error) {
-    const message = getSignUpErrorMessage(error);
-    redirect(`/signup?error=${encodeURIComponent(message)}`);
+    return { error: getSignUpErrorMessage(error) };
+  }
+
+  if (!data.user || data.user.identities?.length === 0) {
+    return { error: '이미 가입 신청한 이메일입니다. 로그인하면 승인 상태를 확인할 수 있습니다.' };
   }
 
   // Email confirmation settings can create a temporary session immediately.
   // Clear only this device's session so a completed request always returns to login.
   if (data.session) await supabase.auth.signOut({ scope: 'local' });
 
-  redirect(`/login?message=${encodeURIComponent('가입 신청이 접수되었습니다. 이메일 인증 후 관리자 승인을 기다려 주세요.')}`);
+  redirect(`/signup/complete?email=${encodeURIComponent(email)}`);
 }

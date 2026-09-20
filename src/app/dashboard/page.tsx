@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { DashboardShell, type AppRole } from './dashboard-shell';
 import { signOut, switchActiveRole } from './actions';
+import { resubmitRegistration } from './registration-actions';
 
 const roleCopy: Record<AppRole, { eyebrow: string; title: string; description: string }> = {
   admin: { eyebrow: 'ADMIN HOME', title: '드림어린이부 운영을 한눈에', description: '가입 승인, 학생명단, 출석과 보석 현황을 관리합니다.' },
@@ -31,7 +32,8 @@ function UpcomingPlans({ plans }: { plans: { id: string; schedule_date: string; 
   return <section className="upcoming-plans-card"><Link href="/dashboard/plans" className="upcoming-plans-heading"><div><p className="eyebrow">UPCOMING PLAN</p><h2>다가오는 일정</h2></div><span>계획표 보기 →</span></Link><div className="upcoming-plans-list">{plans.map((plan) => <Link key={plan.id} href="/dashboard/plans"><time><b>{Number(plan.schedule_date.slice(5,7))}월 {Number(plan.schedule_date.slice(8,10))}일</b><small>{plan.schedule_time ? plan.schedule_time.slice(0,5) : '시간 미정'}</small></time><strong>{plan.title}</strong><i>›</i></Link>)}{plans.length === 0 && <p>등록된 다가오는 일정이 없습니다.</p>}</div></section>;
 }
 
-export default async function DashboardPage() {
+export default async function DashboardPage({ searchParams }: PageProps<'/dashboard'>) {
+  const pageParams = await searchParams;
   const supabase = await createClient();
   const { data, error } = await supabase.auth.getClaims();
   if (error || !data?.claims?.sub) redirect('/login');
@@ -42,9 +44,10 @@ export default async function DashboardPage() {
   ]);
 
   if (!profile || !profile.is_active) {
-    const { data: request } = await supabase.from('registration_requests').select('full_name, status').eq('user_id', userId).maybeSingle();
+    const { data: request } = await supabase.from('registration_requests').select('full_name, status, rejection_reason').eq('user_id', userId).maybeSingle();
     const withdrawn = profile?.account_status === 'withdrawn';
-    return <main className="pending-account-page"><section><span className="modal-icon">✦</span><p className="eyebrow">{withdrawn ? 'ACCOUNT WITHDRAWN' : 'ACCOUNT REVIEW'}</p><h1>{withdrawn ? '탈퇴 처리된 계정입니다' : `${request?.full_name ?? '가입자'}님의 가입 신청을 확인 중입니다`}</h1><p>{withdrawn ? '로그인이 차단된 계정입니다. 다시 이용하려면 관리자에게 계정 복구를 요청해 주세요.' : request?.status === 'rejected' ? '가입 신청이 반려되었습니다. 관리자에게 문의해 주세요.' : '이메일 인증은 완료되었습니다. 관리자가 계정의 역할을 승인하면 해당 홈 화면이 자동으로 열립니다.'}</p><div className="pending-actions"><form action={signOut}><button type="submit">로그아웃</button></form></div></section></main>;
+    const rejected = request?.status === 'rejected';
+    return <main className="pending-account-page"><section><span className="modal-icon">{rejected ? '!' : '✦'}</span><p className="eyebrow">{withdrawn ? 'ACCOUNT WITHDRAWN' : rejected ? 'REQUEST RETURNED' : 'ACCOUNT REVIEW'}</p><h1>{withdrawn ? '탈퇴 처리된 계정입니다' : rejected ? '가입 신청이 반려되었습니다' : `${request?.full_name ?? '가입자'}님의 가입 신청을 확인 중입니다`}</h1><p>{withdrawn ? '로그인이 차단된 계정입니다. 다시 이용하려면 관리자에게 계정 복구를 요청해 주세요.' : rejected ? request.rejection_reason || '관리자가 신청 내용을 다시 확인해 달라고 요청했습니다.' : '관리자가 신청 내용과 계정 권한을 확인 중입니다. 승인 후 계정별 홈 화면이 열립니다.'}</p>{typeof pageParams.message === 'string' && <p className="form-alert success">{pageParams.message}</p>}{typeof pageParams.error === 'string' && <p className="form-alert error">{pageParams.error}</p>}<div className="pending-actions">{rejected && <form action={resubmitRegistration}><button type="submit">같은 정보로 다시 신청</button></form>}<form action={signOut}><button type="submit" className="secondary">로그아웃</button></form></div></section></main>;
   }
 
   const role = profile.role as AppRole;

@@ -29,31 +29,24 @@ export async function approveRegistration(formData: FormData) {
   const userId = String(formData.get('user_id') ?? '');
   const roles = selectedRoles(formData);
   if (roles.length === 0) accountsRedirect('error', '권한을 한 개 이상 선택해 주세요.');
-  const role = roles[0];
-
-  const { data: request } = await admin.supabase.from('registration_requests').select('full_name, phone, address, note, status').eq('user_id', userId).eq('status', 'pending').maybeSingle();
-  if (!request) return;
-
-  const { data: registration } = await admin.supabase.from('registration_requests').select('email').eq('user_id', userId).maybeSingle();
-  const { error } = await admin.supabase.from('profiles').upsert({ id: userId, email: registration?.email ?? null, role, full_name: request.full_name, phone: request.phone, address: request.address, note: request.note, is_active: true }, { onConflict: 'id' });
-  if (error) accountsRedirect('error', `계정 프로필을 승인하지 못했습니다. (${error.message})`);
-  const { error: rolesError } = await admin.supabase.rpc('admin_set_user_roles', { target_user_id: userId, selected_roles: roles });
-  if (rolesError) accountsRedirect('error', `복수 권한을 저장하지 못했습니다. (${rolesError.message})`);
-  const { error: confirmError } = await admin.supabase.rpc('admin_confirm_user_email', { target_user_id: userId });
-  if (confirmError) accountsRedirect('error', `이메일 인증을 완료하지 못했습니다. (${confirmError.message})`);
-  await admin.supabase.from('registration_requests').update({ status: 'approved', reviewed_by: admin.userId, reviewed_at: new Date().toISOString() }).eq('user_id', userId);
+  const { error } = await admin.supabase.rpc('admin_approve_registration', { target_user_id: userId, selected_roles: roles });
+  if (error) accountsRedirect('error', `가입 승인을 완료하지 못했습니다. (${error.message})`);
   revalidatePath('/dashboard');
   revalidatePath('/dashboard/accounts');
-  accountsRedirect('message', '가입 승인과 이메일 인증을 완료했습니다. 이제 가입한 비밀번호로 로그인할 수 있습니다.');
+  accountsRedirect('message', '가입 승인과 권한 부여를 완료했습니다. 이제 가입한 비밀번호로 로그인할 수 있습니다.');
 }
 
 export async function rejectRegistration(formData: FormData) {
   const admin = await requireAdmin();
   if (!admin) return;
   const userId = String(formData.get('user_id') ?? '');
-  await admin.supabase.from('registration_requests').update({ status: 'rejected', reviewed_by: admin.userId, reviewed_at: new Date().toISOString() }).eq('user_id', userId).eq('status', 'pending');
+  const reason = String(formData.get('rejection_reason') ?? '').trim().slice(0, 300);
+  if (!reason) accountsRedirect('error', '반려 사유를 입력해 주세요.');
+  const { error } = await admin.supabase.rpc('admin_reject_registration', { target_user_id: userId, reason });
+  if (error) accountsRedirect('error', `가입 신청을 반려하지 못했습니다. (${error.message})`);
   revalidatePath('/dashboard');
   revalidatePath('/dashboard/accounts');
+  accountsRedirect('message', '가입 신청을 반려하고 사유를 저장했습니다.');
 }
 
 export async function updateAccountRole(formData: FormData) {
