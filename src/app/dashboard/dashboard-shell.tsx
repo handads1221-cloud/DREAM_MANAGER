@@ -11,15 +11,15 @@ type MenuItem = { icon: AppIconName; label: string; href: string };
 const menus: Record<AppRole, MenuItem[]> = {
   admin: [{ icon: 'home', label: '홈', href: '/dashboard' }, { icon: 'finance', label: '회계장부', href: '/dashboard/finance' }, { icon: 'students', label: '학생명단관리', href: '/dashboard/students' }, { icon: 'relationships', label: '계정·가족연결', href: '/dashboard/relationships' }, { icon: 'attendance', label: '출석관리', href: '/dashboard/attendance' }, { icon: 'calendar', label: '계획표', href: '/dashboard/plans' }, { icon: 'gem', label: '드림보석', href: '/dashboard/points' }, { icon: 'notice', label: '공지게시판', href: '/dashboard/notices' }, { icon: 'accounts', label: '가입승인', href: '/dashboard/accounts' }, { icon: 'inquiry', label: '메시지함', href: '/dashboard/messages' }, { icon: 'draw', label: '랜덤 뽑기', href: '/dashboard/random-draw' }],
   teacher: [{ icon: 'home', label: '홈', href: '/dashboard' }, { icon: 'finance', label: '결제요청', href: '/dashboard/finance/requests' }, { icon: 'students', label: '전체 학생', href: '/dashboard/attendance' }, { icon: 'attendance', label: '출석등록', href: '/dashboard/attendance' }, { icon: 'calendar', label: '계획표', href: '/dashboard/plans' }, { icon: 'gem', label: '보석 관리', href: '/dashboard/points' }, { icon: 'notice', label: '공지게시판', href: '/dashboard/notices' }, { icon: 'contact', label: '연락처', href: '/dashboard#contacts' }],
-  parent: [{ icon: 'home', label: '홈', href: '/dashboard' }, { icon: 'child', label: '우리아이', href: '/dashboard/children' }, { icon: 'notice', label: '공지게시판', href: '/dashboard/notices' }, { icon: 'inquiry', label: '문의하기', href: '/dashboard/messages' }],
-  student: [{ icon: 'home', label: '홈', href: '/dashboard' }, { icon: 'qr', label: 'QR 출석', href: '/dashboard/check-in' }, { icon: 'attendance', label: '내 출석', href: '/dashboard#attendance' }, { icon: 'gem', label: '내 보석', href: '/dashboard#points' }, { icon: 'notice', label: '공지게시판', href: '/dashboard/notices' }],
+  parent: [{ icon: 'home', label: '홈', href: '/dashboard' }, { icon: 'child', label: '우리아이', href: '/dashboard/children' }, { icon: 'calendar', label: '계획표', href: '/dashboard/plans' }, { icon: 'notice', label: '공지게시판', href: '/dashboard/notices' }, { icon: 'inquiry', label: '문의하기', href: '/dashboard/messages' }],
+  student: [{ icon: 'home', label: '홈', href: '/dashboard' }, { icon: 'qr', label: 'QR 출석', href: '/dashboard/check-in' }, { icon: 'calendar', label: '계획표', href: '/dashboard/plans' }, { icon: 'attendance', label: '내 출석', href: '/dashboard#attendance' }, { icon: 'gem', label: '내 보석', href: '/dashboard#points' }, { icon: 'notice', label: '공지게시판', href: '/dashboard/notices' }],
   accountant: [{ icon: 'home', label: '홈', href: '/dashboard' }, { icon: 'finance', label: '회계장부', href: '/dashboard/finance' }, { icon: 'accounts', label: '결제요청 관리', href: '/dashboard/finance/requests' }],
 };
 const mobileMenus: Record<AppRole, MenuItem[]> = {
   admin: [menus.admin[0], menus.admin[1], menus.admin[4], menus.admin[5], menus.admin[9]],
   teacher: [menus.teacher[0], menus.teacher[1], menus.teacher[3], menus.teacher[5], menus.teacher[6]],
   parent: menus.parent,
-  student: [menus.student[0], menus.student[1], menus.student[4]],
+  student: [menus.student[0], menus.student[1], menus.student[2], menus.student[5]],
   accountant: menus.accountant,
 };
 

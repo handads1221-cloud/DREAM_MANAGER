@@ -128,7 +128,7 @@ export default async function DashboardPage({ searchParams }: PageProps<'/dashbo
     {role !== 'student' && <section className="role-home-panel"><div><p className="eyebrow">QUICK START</p><h2>{copy.title}</h2><span>현재 계정 권한에 맞는 기능만 표시됩니다.</span></div><div className="role-quick-links">
       {role === 'admin' && <><Link href="/dashboard/finance">회계장부</Link><Link href="/dashboard/finance/requests">결제요청 관리</Link><Link href="/dashboard/messages">부모 문의 메시지함</Link><Link href="/dashboard/accounts">가입 승인</Link><Link href="/dashboard/relationships">계정·가족·담당 연결</Link><Link href="/dashboard/students">학생명단관리</Link><Link href="/dashboard/attendance">출석·QR 관리</Link><Link href="/dashboard/plans">계획표</Link><Link href="/dashboard/points">드림보석 관리</Link><Link href="/dashboard/notices">공지게시판 관리</Link></>}
       {role === 'teacher' && <><Link href="/dashboard/attendance">대리 출석등록</Link><Link href="/dashboard/plans">계획표</Link><Link href="/dashboard/points">드림보석 지급</Link><Link href="/dashboard/notices">공지게시판</Link><Link href="#contacts">학생·부모 연락처</Link></>}
-      {role === 'parent' && <><Link href="/dashboard/children">우리아이 정보</Link><Link href="/dashboard/notices">공지게시판</Link><Link href="/dashboard/messages">관리자 문의</Link></>}
+      {role === 'parent' && <><Link href="/dashboard/children">우리아이 정보</Link><Link href="/dashboard/plans">계획표</Link><Link href="/dashboard/notices">공지게시판</Link><Link href="/dashboard/messages">관리자 문의</Link></>}
       {role === 'accountant' && <><Link href="/dashboard/finance">회계장부</Link><Link href="/dashboard/finance/requests">결제요청 관리</Link></>}
     </div></section>}
   </DashboardShell>;
