@@ -54,7 +54,7 @@ export async function signUp(_previousState: SignupState, formData: FormData): P
   const teacherInviteCode = String(formData.get('teacher_invite_code') ?? '').trim();
 
   if (loginId.length < 3 || loginId.length > 30 || /\s/.test(loginId)) return { error: '아이디는 공백 없이 3~30자로 입력해 주세요.' };
-  if (!fullName || fullName.length > 50) return { error: '이름은 1~50자로 입력해 주세요.' };
+  if (!/^[가-힣]{2,10}$/.test(fullName)) return { error: '이름은 공백 없이 한글 2~10자로 입력해 주세요.' };
   if (password.length < 8) return { error: '비밀번호는 8자 이상으로 설정해 주세요.' };
   if (password !== passwordConfirm) return { error: '비밀번호 확인이 일치하지 않습니다.' };
   if (!['parent', 'student', 'teacher', 'accountant'].includes(requestedRole)) return { error: '가입 유형을 다시 선택해 주세요.' };

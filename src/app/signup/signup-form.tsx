@@ -17,7 +17,7 @@ export function SignupForm() {
     <label htmlFor="signup-login-id">아이디 *</label>
     <input id="signup-login-id" name="login_id" type="text" autoComplete="username" minLength={3} maxLength={30} placeholder="공백 없이 3~30자" required />
     <label htmlFor="signup-name">이름 *</label>
-    <input id="signup-name" name="full_name" type="text" autoComplete="name" maxLength={50} placeholder="이름" required />
+    <input id="signup-name" name="full_name" type="text" autoComplete="name" minLength={2} maxLength={10} pattern="[가-힣]{2,10}" title="공백 없이 한글 2~10자로 입력해 주세요." placeholder="한글 이름" required />
     <label htmlFor="signup-role">가입 유형 <small>(관리자 참고용)</small></label>
     <select id="signup-role" name="requested_role" value={requestedRole} onChange={(event) => setRequestedRole(event.target.value)} required>
       <option value="parent">부모님</option><option value="student">학생</option><option value="teacher">선생님</option><option value="accountant">회계담당자</option>
