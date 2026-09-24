@@ -76,7 +76,7 @@ export function GemRankingDisplay({ groups }: { groups:DisplayRankGroup[] }) {
         const group = groups.find((item) => item.rank === rank);
         const visible = revealedRank >= revealThreshold(rank);
         return <section className={`ranking-board-group rank-${rank}${visible ? ' visible' : ''}`} key={rank}>
-          <div><strong>{rank}</strong><span>{medals[rank - 1]}</span><em><GemIcon/>{visible ? `${group?.balance ?? 0}개` : '공개 전'}</em></div>
+          <div className="ranking-board-heading"><span className="ranking-medal" aria-hidden="true"><i/><GemIcon/></span><span className="ranking-medal-label">{medals[rank - 1]}</span><em><GemIcon/>{visible ? `${group?.balance ?? 0}개` : '공개 전'}</em></div>
           <ul>{visible ? (group?.students ?? []).map((student) => <li key={student.id}>{student.name}<small>{student.grade}학년</small></li>) : <li className="ranking-hidden">?</li>}</ul>
         </section>;
       })}
