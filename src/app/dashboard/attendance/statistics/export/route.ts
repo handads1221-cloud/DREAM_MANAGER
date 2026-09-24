@@ -33,7 +33,7 @@ export async function GET(request: Request) {
   if (grade !== null) studentQuery = studentQuery.eq('grade', grade);
   const [{ data: students }, { data: events }] = await Promise.all([
     studentQuery,
-    supabase.from('attendance_events').select('id,service_date,title').gte('service_date', from).lte('service_date', to).order('service_date'),
+    supabase.from('attendance_events').select('id,service_date,title,is_statistics_excluded,statistics_exclusion_reason').gte('service_date', from).lte('service_date', to).order('service_date'),
   ]);
   const studentRows = students ?? [];
   const eventRows = events ?? [];
@@ -57,6 +57,8 @@ export async function GET(request: Request) {
   }
   const dateColumns = [...dates].sort();
   const eventByDate = new Map(eventRows.map((event) => [event.service_date, event.id]));
+  const excludedDates = new Set(eventRows.filter((event) => event.is_statistics_excluded).map((event) => event.service_date));
+  const eligibleDates = dateColumns.filter((date) => !excludedDates.has(date));
   const recordMap = new Map(attendance.map((record) => [`${record.event_id}:${record.student_id}`, record.status]));
   const mark = (status?: string) => status === 'present' ? '○' : status === 'late' ? '△' : status === 'excused' ? '사' : '';
 
@@ -71,7 +73,7 @@ export async function GET(request: Request) {
   roster.getCell(1, 1).alignment = { horizontal: 'center', vertical: 'middle' };
   roster.getRow(1).height = 30;
   roster.mergeCells(2, 1, 2, lastColumn);
-  roster.getCell(2, 1).value = '○ 출석 · △ 지각 · 사 사유결석 · 공란 결석';
+  roster.getCell(2, 1).value = '○ 출석 · △ 지각 · 사 사유결석 · 공란 결석 · 제외 예배 없음';
   roster.getCell(2, 1).font = { size: 10, color: { argb: 'FF65736E' } };
   roster.getCell(2, 1).alignment = { horizontal: 'right' };
   const headers = ['학년', '이름', '반', ...dateColumns.map(dateLabel), '출석', '결석', '출석률'];
@@ -82,16 +84,17 @@ export async function GET(request: Request) {
   roster.getRow(4).alignment = { horizontal: 'center', vertical: 'middle' };
   studentRows.forEach((student) => {
     const marks = dateColumns.map((date) => {
+      if (excludedDates.has(date)) return '제외';
       const eventId = eventByDate.get(date);
       return mark(eventId ? recordMap.get(`${eventId}:${student.id}`) : undefined);
     });
     const attended = marks.filter((value) => value === '○' || value === '△').length;
-    const row = roster.addRow([student.grade, student.full_name, student.class_name ?? '', ...marks, attended, dateColumns.length - attended, dateColumns.length ? attended / dateColumns.length : 0]);
+    const row = roster.addRow([student.grade, student.full_name, student.class_name ?? '', ...marks, attended, eligibleDates.length - attended, eligibleDates.length ? attended / eligibleDates.length : 0]);
     row.alignment = { horizontal: 'center', vertical: 'middle' };
     row.getCell(2).alignment = { horizontal: 'left', vertical: 'middle' };
     row.getCell(lastColumn).numFmt = '0.0%';
   });
-  roster.columns.forEach((column, index) => { column.width = index === 1 ? 12 : index === 2 ? 10 : index >= 3 && index < 3 + dateColumns.length ? 6 : 9; });
+  roster.columns.forEach((column, index) => { column.width = index === 1 ? 12 : index === 2 ? 10 : index >= 3 && index < 3 + dateColumns.length ? 7 : 9; });
   roster.getColumn(1).width = 8;
   roster.eachRow((row, rowNumber) => { if (rowNumber >= 4) row.eachCell((cell) => { cell.border = { top: { style: 'thin', color: { argb: 'FFDCE5E1' } }, left: { style: 'thin', color: { argb: 'FFDCE5E1' } }, bottom: { style: 'thin', color: { argb: 'FFDCE5E1' } }, right: { style: 'thin', color: { argb: 'FFDCE5E1' } } }; }); });
   roster.autoFilter = { from: { row: 4, column: 1 }, to: { row: 4, column: lastColumn } };
@@ -99,14 +102,18 @@ export async function GET(request: Request) {
 
   const daily = workbook.addWorksheet('날짜별 집계', { views: [{ state: 'frozen', ySplit: 2 }] });
   daily.addRow(['날짜별 출석 집계']);
-  daily.mergeCells(1, 1, 1, 5);
-  daily.addRow(['날짜', '전체 학생', '출석', '결석', '출석률']);
+  daily.mergeCells(1, 1, 1, 6);
+  daily.addRow(['날짜', '예배 상태', '전체 학생', '출석', '결석', '출석률']);
   dateColumns.forEach((date) => {
+    if (excludedDates.has(date)) {
+      daily.addRow([new Date(`${date}T00:00:00Z`), '예배 없음', '', '', '', '']);
+      return;
+    }
     const eventId = eventByDate.get(date);
     const attended = studentRows.filter((student) => ['present', 'late'].includes(eventId ? recordMap.get(`${eventId}:${student.id}`) ?? '' : '')).length;
-    daily.addRow([new Date(`${date}T00:00:00Z`), studentRows.length, attended, studentRows.length - attended, studentRows.length ? attended / studentRows.length : 0]);
+    daily.addRow([new Date(`${date}T00:00:00Z`), '주일예배', studentRows.length, attended, studentRows.length - attended, studentRows.length ? attended / studentRows.length : 0]);
   });
-  daily.getColumn(1).numFmt = 'yyyy-mm-dd'; daily.getColumn(5).numFmt = '0.0%';
+  daily.getColumn(1).numFmt = 'yyyy-mm-dd'; daily.getColumn(6).numFmt = '0.0%';
   daily.columns.forEach((column) => { column.width = 16; });
 
   const gradeSheet = workbook.addWorksheet('학년별 집계');
@@ -114,8 +121,9 @@ export async function GET(request: Request) {
   gradeSheet.addRow(['학년', '학생 수', '출석 횟수', '가능 횟수', '출석률']);
   [1,2,3,4,5,6].filter((item) => grade === null || item === grade).forEach((item) => {
     const gradeStudents = studentRows.filter((student) => student.grade === item);
-    const attended = attendance.filter((record) => studentIds.has(record.student_id) && gradeStudents.some((student) => student.id === record.student_id) && ['present', 'late'].includes(record.status)).length;
-    const possible = gradeStudents.length * dateColumns.length;
+    const eligibleEventIds = new Set(eventRows.filter((event) => !event.is_statistics_excluded).map((event) => event.id));
+    const attended = attendance.filter((record) => eligibleEventIds.has(record.event_id) && studentIds.has(record.student_id) && gradeStudents.some((student) => student.id === record.student_id) && ['present', 'late'].includes(record.status)).length;
+    const possible = gradeStudents.length * eligibleDates.length;
     gradeSheet.addRow([`${item}학년`, gradeStudents.length, attended, possible, possible ? attended / possible : 0]);
   });
   gradeSheet.getColumn(5).numFmt = '0.0%'; gradeSheet.columns.forEach((column) => { column.width = 18; });

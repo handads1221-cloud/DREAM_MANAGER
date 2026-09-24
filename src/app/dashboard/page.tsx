@@ -65,24 +65,26 @@ export default async function DashboardPage({ searchParams }: PageProps<'/dashbo
     const todayDate = new Date(`${today}T00:00:00Z`);
     const latestSunday = new Date(todayDate);
     latestSunday.setUTCDate(todayDate.getUTCDate() - todayDate.getUTCDay());
-    const sundayDates = Array.from({ length: 4 }, (_, index) => {
+    const candidateSundayDates = Array.from({ length: 12 }, (_, index) => {
       const sunday = new Date(latestSunday);
-      sunday.setUTCDate(latestSunday.getUTCDate() - (3 - index) * 7);
+      sunday.setUTCDate(latestSunday.getUTCDate() - (11 - index) * 7);
       return sunday.toISOString().slice(0, 10);
     });
     const [{ data: activeStudents }, { data: events }, { data: teacherRoles }, { data: upcomingPlans }] = await Promise.all([
       supabase.from('students').select('id,full_name,grade,birth_date').eq('is_active', true).order('grade').order('full_name'),
-      supabase.from('attendance_events').select('id, service_date').gte('service_date', sundayDates[0]).lte('service_date', sundayDates[3]),
+      supabase.from('attendance_events').select('id, service_date, is_statistics_excluded, statistics_exclusion_reason').gte('service_date', candidateSundayDates[0]).lte('service_date', candidateSundayDates[11]),
       supabase.from('user_roles').select('user_id').eq('role', 'teacher'),
       supabase.from('weekly_plans').select('id,schedule_date,schedule_time,title').gte('schedule_date', today).order('schedule_date').order('schedule_time').limit(5),
     ]);
-    const eventIds = (events ?? []).map((event) => event.id);
+    const excludedDates = new Set((events ?? []).filter((event) => event.is_statistics_excluded).map((event) => event.service_date));
+    const sundayDates = candidateSundayDates.filter((date) => !excludedDates.has(date)).slice(-4);
+    const eventIds = (events ?? []).filter((event) => !event.is_statistics_excluded).map((event) => event.id);
     const teacherIds = (teacherRoles ?? []).map((item) => item.user_id);
     const [{ data: attendanceRows }, { data: teacherBirthdays }] = await Promise.all([
       eventIds.length ? supabase.from('attendance_records').select('event_id,student_id').in('event_id', eventIds).in('status', ['present','late']) : Promise.resolve({ data: [] }),
       teacherIds.length ? supabase.from('profiles').select('full_name, birth_date').in('id', teacherIds).eq('is_active', true).not('birth_date', 'is', null) : Promise.resolve({ data: [] }),
     ]);
-    const eventDates = new Map((events ?? []).map((event) => [event.id, event.service_date]));
+    const eventDates = new Map((events ?? []).filter((event) => !event.is_statistics_excluded).map((event) => [event.id, event.service_date]));
     const attendanceByDate = new Map<string, number>();
     const attendedDatesByStudent = new Map<string, Set<string>>();
     for (const row of attendanceRows ?? []) {
@@ -97,10 +99,11 @@ export default async function DashboardPage({ searchParams }: PageProps<'/dashbo
     const weeks = sundayDates.map((date, index) => ({ date, count: attendanceByDate.get(date) ?? 0, current: index === sundayDates.length - 1 }));
     const people = [...(activeStudents ?? []).filter((item) => item.birth_date).map((item) => ({ name: item.full_name, role: '학생', date: item.birth_date! })), ...(teacherBirthdays ?? []).map((item) => ({ name: item.full_name, role: '선생님', date: item.birth_date! }))];
     const inMonth = (month: number) => people.filter((person) => Number(person.date.slice(5, 7)) === month).sort((a, b) => a.date.slice(5).localeCompare(b.date.slice(5)));
-    const latest = weeks.at(-1);
     const recentThreeSundays = sundayDates.slice(-3);
     const consecutiveAbsences = (activeStudents ?? []).filter((student) => recentThreeSundays.every((date) => !attendedDatesByStudent.get(student.id)?.has(date))).map((student) => ({ name: student.full_name, grade: student.grade }));
-    stats = [{ label: '재학생', value: `${activeStudents?.length ?? 0}명`, href: role === 'admin' ? '/dashboard/students' : '/dashboard/attendance', tone: 'mint' }, { label: '이번 주 출석', value: `${latest?.count ?? 0}명`, detail: latest ? `${Number(latest.date.slice(5,7))}월 ${Number(latest.date.slice(8,10))}일` : '예배일 미등록', href: '/dashboard/attendance', tone: 'pink' }];
+    const currentSunday = candidateSundayDates.at(-1)!;
+    const currentExcludedEvent = (events ?? []).find((event) => event.service_date === currentSunday && event.is_statistics_excluded);
+    stats = [{ label: '재학생', value: `${activeStudents?.length ?? 0}명`, href: role === 'admin' ? '/dashboard/students' : '/dashboard/attendance', tone: 'mint' }, { label: '이번 주 출석', value: currentExcludedEvent ? '예배 없음' : `${attendanceByDate.get(currentSunday) ?? 0}명`, detail: currentExcludedEvent ? `${Number(currentSunday.slice(5,7))}월 ${Number(currentSunday.slice(8,10))}일 · 통계 제외` : `${Number(currentSunday.slice(5,7))}월 ${Number(currentSunday.slice(8,10))}일`, href: `/dashboard/attendance?date=${currentSunday}`, tone: 'pink' }];
     adminOverview = { weeks, upcomingPlans: upcomingPlans ?? [], previousMonth, currentMonth, previousBirthdays: inMonth(previousMonth), currentBirthdays: inMonth(currentMonth), consecutiveAbsences };
   } else if (role === 'parent') {
     const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Seoul' }).format(new Date());

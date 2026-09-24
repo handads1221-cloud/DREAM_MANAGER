@@ -6,6 +6,7 @@ import { createHash } from 'node:crypto';
 import { createClient } from '@/lib/supabase/server';
 
 export type BulkAttendanceResult = { ok: true; action: 'present' | 'cancel'; studentIds: string[]; message: string } | { ok: false; message: string };
+export type ExclusionResult = { ok: boolean; message: string };
 
 function isValidDate(value: string) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
@@ -21,6 +22,8 @@ export async function updateBulkAttendance(formData: FormData): Promise<BulkAtte
   let eventId = String(formData.get('event_id') ?? ''); const serviceDate = String(formData.get('service_date') ?? ''); const action = String(formData.get('attendance_action') ?? '');
   const studentIds = [...new Set(formData.getAll('student_ids').map(String).filter(Boolean))];
   if (!isValidDate(serviceDate) || studentIds.length === 0) return { ok: false, message: '날짜와 처리할 학생을 확인해 주세요.' };
+  const { data: eventState } = await supabase.from('attendance_events').select('is_statistics_excluded').eq('service_date', serviceDate).maybeSingle();
+  if (eventState?.is_statistics_excluded) return { ok: false, message: '별도 예배가 없는 날짜는 출석을 등록하거나 취소할 수 없습니다.' };
   if (!eventId && action === 'present') {
     if (profile.role !== 'admin') return { ok: false, message: '아직 출석 회차가 없는 날짜입니다. 관리자에게 해당 날짜의 첫 출석 등록을 요청해 주세요.' };
     const qrTokenHash = createHash('sha256').update(`manual-attendance:${serviceDate}`).digest('hex');
@@ -47,6 +50,25 @@ export async function updateBulkAttendance(formData: FormData): Promise<BulkAtte
   return { ok: true, action, studentIds, message: action === 'present' ? `${studentIds.length}명의 출석을 등록했습니다.` : `${studentIds.length}명의 출석을 취소했습니다.` };
 }
 
+export async function setAttendanceStatisticsExclusion(formData: FormData): Promise<ExclusionResult> {
+  const serviceDate = String(formData.get('service_date') ?? '');
+  const excluded = String(formData.get('excluded') ?? '') === 'true';
+  if (!isValidDate(serviceDate) || new Date(`${serviceDate}T00:00:00Z`).getUTCDay() !== 0) return { ok: false, message: '통계 제외는 일요일에만 설정할 수 있습니다.' };
+  const supabase = await createClient();
+  const { data } = await supabase.auth.getClaims();
+  if (!data?.claims?.sub) return { ok: false, message: '로그인이 만료되었습니다. 다시 로그인해 주세요.' };
+  const { data: profile } = await supabase.from('profiles').select('role,is_active').eq('id', data.claims.sub).maybeSingle();
+  if (!profile?.is_active || profile.role !== 'admin') return { ok: false, message: '관리자만 통계 제외를 설정할 수 있습니다.' };
+  const { error } = await supabase.rpc('set_attendance_statistics_exclusion', { target_date: serviceDate, excluded });
+  if (error) return { ok: false, message: `설정을 변경하지 못했습니다. (${error.message})` };
+  revalidatePath('/dashboard/attendance');
+  revalidatePath('/dashboard/attendance/statistics');
+  revalidatePath('/dashboard/attendance/qr');
+  revalidatePath('/dashboard');
+  revalidatePath('/dashboard/points');
+  return { ok: true, message: excluded ? '별도 예배가 없는 주일로 지정했습니다. 기존 출석과 자동 지급 보석은 취소됩니다.' : '정상 주일예배로 복원했습니다.' };
+}
+
 export async function submitQr(formData: FormData) {
   const token = String(formData.get('token') ?? ''); const supabase = await createClient(); const { data, error } = await supabase.rpc('submit_qr_attendance', { raw_token: token });
   if (!error) { revalidatePath('/dashboard'); revalidatePath('/dashboard/points'); revalidatePath('/dashboard/points/statistics'); }
@@ -55,6 +77,7 @@ export async function submitQr(formData: FormData) {
     : rawError.includes('student profile not linked') ? '학생 계정이 학생 명단에 연결되지 않았습니다. 관리자에게 학생계정 연결을 요청해 주세요.'
     : rawError.includes('student account required') ? '학생 계정으로 로그인해야 QR 출석을 할 수 있습니다.'
     : rawError.includes('invalid daily qr') ? '오늘 날짜의 출석 QR이 아닙니다. 관리자 화면의 당일 QR을 다시 촬영해 주세요.'
+    : rawError.includes('attendance event excluded') ? '오늘은 교회학교 별도 예배가 없어 QR 출석을 받지 않습니다.'
     : '출석 처리 중 오류가 발생했습니다. 잠시 후 다시 시도하거나 관리자에게 문의해 주세요.';
   redirect(`/dashboard/check-in?message=${encodeURIComponent(message)}&success=${error ? '0' : '1'}`);
 }

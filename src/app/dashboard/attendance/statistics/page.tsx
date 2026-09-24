@@ -23,8 +23,10 @@ export default async function AttendanceStatisticsPage({ searchParams }: PagePro
   const year = validYear(params.year, currentYear);
   const from = `${year}-01-01`;
   const to = `${year}-12-31`;
-  const { data: events } = await supabase.from('attendance_events').select('id,service_date').gte('service_date', from).lte('service_date', to).order('service_date');
-  const eventRows = events ?? [];
+  const { data: events } = await supabase.from('attendance_events').select('id,service_date,is_statistics_excluded').gte('service_date', from).lte('service_date', to).order('service_date');
+  const allEventRows = events ?? [];
+  const eventRows = allEventRows.filter((event) => !event.is_statistics_excluded);
+  const excludedCount = allEventRows.length - eventRows.length;
   const eventIds = eventRows.map((event) => event.id);
   const records: { event_id: string; status: string }[] = [];
   for (let offset = 0; offset < eventIds.length; offset += 100) {
@@ -62,7 +64,7 @@ export default async function AttendanceStatisticsPage({ searchParams }: PagePro
     </form>
 
     <section className="attendance-monthly-card">
-      <div className="attendance-stat-title"><div><p className="eyebrow">MONTHLY ATTENDANCE</p><h2>월별 출석인원</h2></div><span>막대: 월간 총 출석 횟수 · 숫자: 주일 평균 인원</span></div>
+      <div className="attendance-stat-title"><div><p className="eyebrow">MONTHLY ATTENDANCE</p><h2>월별 출석인원</h2></div><span>막대: 월간 총 출석 횟수 · 숫자: 주일 평균 인원{excludedCount ? ` · 별도 예배 없음 ${excludedCount}회 제외` : ''}</span></div>
       <div className="attendance-monthly-chart">{monthNames.map((month, index) => <div className="attendance-month-column" key={month}>
         <strong>{averages[index] ? `${averages[index].toFixed(1)}명` : '0명'}</strong>
         <div className="attendance-month-track"><i style={{ height: `${Math.max(totals[index] ? 8 : 2, totals[index] / maxTotal * 100)}%` }}/></div>
@@ -78,7 +80,7 @@ export default async function AttendanceStatisticsPage({ searchParams }: PagePro
         <label><span>학년</span><select name="grade" defaultValue="all"><option value="all">전체 학년</option>{[1,2,3,4,5,6].map((grade) => <option key={grade} value={grade}>{grade}학년</option>)}</select></label>
         <button type="submit">엑셀 다운로드</button>
       </form>
-      <p>○ 출석 · △ 지각 · 공란 결석으로 표시합니다. 연락처와 주소 등 개인정보는 포함하지 않습니다.</p>
+      <p>○ 출석 · △ 지각 · 공란 결석 · 예배 없음은 통계 제외로 표시합니다. 연락처와 주소 등 개인정보는 포함하지 않습니다.</p>
     </section>
   </DashboardShell>;
 }

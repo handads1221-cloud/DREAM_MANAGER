@@ -23,6 +23,23 @@
   .receipt-links { overflow: hidden; }
 }
 
+.attendance-exclusion-control { display: flex; align-items: center; gap: 18px; padding: 16px 18px; border: 1px solid #f0d6a0; border-radius: 16px; background: #fffaf0; }
+.attendance-exclusion-control > div { display: grid; gap: 4px; margin-right: auto; }
+.attendance-exclusion-control b { color: #704d16; font-size: 13px; }
+.attendance-exclusion-control span { color: #8b744f; font-size: 10px; }
+.attendance-exclusion-control button { min-height: 40px; padding: 0 16px; border: 0; border-radius: 11px; background: #9c6c21; color: #fff; font-size: 11px; font-weight: 850; cursor: pointer; }
+.attendance-exclusion-control.active { border-color: #e2b9b4; background: #fff3f1; }
+.attendance-exclusion-control.active b { color: #9b3f37; }
+.attendance-exclusion-control.active button { border: 1px solid #e2b9b4; background: #fff; color: #8a3f38; }
+.attendance-no-service-notice { display: grid; gap: 5px; margin: 0; padding: 18px; border-radius: 16px; background: #3f302c; color: #fff; }
+.attendance-no-service-notice strong { font-size: 14px; }
+.attendance-no-service-notice span { font-size: 11px; }
+.attendance-no-service-notice small { color: #e5d5d0; font-size: 9px; }
+.qr-no-service { display: grid; gap: 12px; width: min(720px, 80vw); padding: 36px; border-radius: 28px; background: rgba(255,255,255,.9); box-shadow: 0 24px 80px rgba(48,42,30,.18); text-align: center; }
+.qr-no-service strong { color: #744e28; font-size: clamp(25px, 3vw, 50px); }
+.qr-no-service span { color: #8f765e; font-size: clamp(14px, 1.5vw, 24px); }
+@media (max-width: 640px) { .attendance-exclusion-control { align-items: stretch; flex-direction: column; gap: 12px; } .attendance-exclusion-control button { width: 100%; } }
+
 .finance-heading-actions { display: grid; justify-items: end; gap: 6px; }
 .finance-heading-actions a { color: #087b57; font-size: 10px; font-weight: 850; }
 .receipt-links { margin: 10px 0; padding: 10px; display: flex !important; flex-wrap: wrap; align-items: center; gap: 7px !important; border-radius: 10px; background: #f2f7f4; }

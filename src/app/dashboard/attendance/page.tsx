@@ -26,7 +26,7 @@ export default async function AttendancePage({ searchParams }: PageProps<'/dashb
   const isSunday = new Date(`${selectedDate}T00:00:00Z`).getUTCDay() === 0;
 
   const [{ data: event }, { data: students }] = await Promise.all([
-    supabase.from('attendance_events').select('id, service_date, title, opens_at, closes_at').eq('service_date', selectedDate).maybeSingle(),
+    supabase.from('attendance_events').select('id, service_date, title, opens_at, closes_at, is_statistics_excluded, statistics_exclusion_reason').eq('service_date', selectedDate).maybeSingle(),
     supabase.from('students').select('id, full_name, grade, class_name').eq('is_active', true).order('grade').order('full_name'),
   ]);
   const { data: records } = event ? await supabase.from('attendance_records').select('student_id, status, checked_at').eq('event_id', event.id) : { data: [] };
@@ -34,6 +34,6 @@ export default async function AttendancePage({ searchParams }: PageProps<'/dashb
   return <DashboardShell profile={{ full_name: profile.full_name, role: profile.role as AppRole }} activeHref="/dashboard/attendance">
     <div className="module-heading"><div><p className="eyebrow">ATTENDANCE</p><h1>주일 출석관리</h1><span>{selectedDate} 출석 현황 · {event ? event.title : '아직 등록된 출석 없음'}</span></div><div className="module-heading-actions"><Link className="module-secondary-link" href="/dashboard/attendance/statistics">출석통계 보기</Link>{profile.role === 'admin' && <Link className="module-primary-link" href="/dashboard/attendance/qr">출석 QR 화면</Link>}</div></div>
     <form className="attendance-date-picker" method="get"><label htmlFor="attendanceDate"><span>조회·등록 날짜</span><input id="attendanceDate" name="date" type="date" defaultValue={selectedDate} max={today}/></label><button type="submit">해당 날짜 조회</button><Link href={`/dashboard/attendance?date=${defaultDate}`}>최근 주일</Link>{!isSunday && <p>선택한 날짜는 일요일이 아닙니다. 입력은 가능하지만 홈 출석 그래프에는 일요일 기록만 집계됩니다.</p>}</form>
-    <AttendanceManager eventId={event?.id ?? null} serviceDate={selectedDate} initialStudents={students ?? []} initialRecords={records ?? []}/>
+    <AttendanceManager eventId={event?.id ?? null} serviceDate={selectedDate} initialStudents={students ?? []} initialRecords={records ?? []} role={profile.role as 'admin' | 'teacher'} isStatisticsExcluded={event?.is_statistics_excluded ?? false} exclusionReason={event?.statistics_exclusion_reason ?? null}/>
   </DashboardShell>;
 }
