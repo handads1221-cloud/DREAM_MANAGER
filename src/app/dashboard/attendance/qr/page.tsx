@@ -13,7 +13,7 @@ function QrStage({ date, qrData, popup }: { date: string; qrData: string; popup:
     <QrDisplayControls popup={popup}/>
     <section className="qr-stage-content">
       <h1><span>{String(year).slice(-2)}년 {month}월 {day}일</span> 출석체크!</h1>
-      {qrData && <div className="qr-stage-code"><Image src={qrData} alt="오늘의 출석 QR코드" width={520} height={520} unoptimized priority/></div>}
+      {qrData && <div className="qr-stage-code"><Image src={qrData} alt="오늘의 출석 QR코드" width={1040} height={1040} unoptimized priority/></div>}
       <p>핸드폰앱으로 모두 출첵해봐요^^</p>
     </section>
   </main>;
@@ -29,7 +29,7 @@ export default async function AttendanceQrPage({ searchParams }: PageProps<'/das
   if (!profile || profile.role !== 'admin' || !profile.is_active) redirect('/dashboard');
   const { data: qrRows } = await supabase.rpc('admin_get_attendance_qr', {});
   const qr = qrRows?.[0];
-  const qrData = qr?.token ? await QRCode.toDataURL(qr.token, { width: 520, margin: 2, errorCorrectionLevel: 'M', color: { dark: '#153b34', light: '#ffffff' } }) : '';
+  const qrData = qr?.token ? await QRCode.toDataURL(qr.token, { width: 1040, margin: 2, errorCorrectionLevel: 'M', color: { dark: '#153b34', light: '#ffffff' } }) : '';
   const stage = <QrStage date={qr?.service_date ?? new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Seoul' }).format(new Date())} qrData={qrData} popup={popup}/>;
   if (popup) return stage;
   return <DashboardShell profile={{ full_name: profile.full_name, role: 'admin' }} activeHref="/dashboard/attendance">{stage}</DashboardShell>;

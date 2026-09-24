@@ -707,6 +707,15 @@ button { color: inherit; }
 .ranking-board-group li { padding:0; border-radius:0; background:transparent; color:#203830; font-size:clamp(18px,1.55vw,29px); line-height:1.2; }
 .ranking-board-group li small { color:#6b746f; font-size:clamp(9px,.7vw,12px); }
 .ranking-board-group li.ranking-hidden { justify-content:flex-start; color:rgba(27,61,50,.28); font-size:40px; }
+
+/* Larger attendance display QR and mobile camera zoom */
+.qr-stage-content { width:min(1100px,84vw); gap:clamp(7px,1.1vh,13px); }
+.qr-stage-code { width:min(82vh,780px,66vw); padding:clamp(12px,1.3vw,20px); }
+.qr-camera-zoom { width:min(100%,460px); margin:12px auto 0; padding:10px 12px; display:grid; grid-template-columns:auto 1fr auto; align-items:center; gap:10px; border:1px solid var(--line); border-radius:13px; background:#f5faf8; color:var(--ink); font-size:12px; font-weight:800; }
+.qr-camera-zoom input { width:100%; accent-color:var(--mint); touch-action:pan-x; }
+.qr-camera-zoom b { min-width:34px; color:#087b57; text-align:right; }
+@media (max-width:900px) { .qr-stage-content { width:min(860px,86vw); }.qr-stage-code { width:min(72vh,680px,70vw); } }
+@media (max-width:620px) { .qr-stage-code { width:min(78vw,55vh); }.qr-camera-zoom { width:100%; } }
 @media (max-width: 560px) { .gem-heading-actions { width: 100%; justify-content: space-between; }.gem-heading-actions a { flex: 1; justify-content: center; }.gem-stat-summary { gap: 6px; }.gem-stat-summary article { min-height: 86px; padding: 11px 8px; border-radius: 13px; }.gem-stat-summary span { font-size: 8px; }.gem-stat-summary strong { gap: 3px; font-size: 16px; }.gem-stat-summary svg { width: 17px; }.gem-stat-filter { margin-top: 1px; }.gem-ranking-heading { padding: 14px 12px; }.gem-ranking-heading h2 { font-size: 16px; }.gem-ranking-head,.gem-ranking-row { grid-template-columns: 42px minmax(90px,1fr) 48px 65px; gap: 5px; }.gem-ranking-head { padding: 8px; font-size: 8px; }.gem-ranking-row { min-height: 52px; padding: 6px 8px; }.gem-ranking-row > strong { font-size: 14px; }.gem-ranking-row > div { gap: 6px; }.gem-ranking-row b { font-size: 10px; }.gem-ranking-row > span { font-size: 8px; }.gem-ranking-row em { gap: 2px; font-size: 10px; }.gem-ranking-row em svg { width: 15px; }.gem-rank-avatar { width: 34px; height: 34px; flex-basis: 34px; }.gem-ranking-toggle { width: calc(100% - 24px); margin: 10px 12px 14px; } }
 
 /* Staff-only weekly plan calendar. */

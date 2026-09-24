@@ -4,6 +4,10 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import QrScanner from 'qr-scanner';
 
+type ZoomRange = { min: number; max: number; step: number };
+type ZoomCapabilities = MediaTrackCapabilities & { zoom?: { min: number; max: number; step?: number } };
+type ZoomSettings = MediaTrackSettings & { zoom?: number };
+
 function cameraErrorMessage(error: unknown) {
   const name = error instanceof DOMException ? error.name : '';
   if (name === 'NotAllowedError') return '카메라 권한이 거부되었습니다. 브라우저 주소창의 카메라 권한을 허용한 뒤 다시 시도해 주세요.';
@@ -16,9 +20,12 @@ export function QrCameraScanner() {
   const router = useRouter();
   const videoRef = useRef<HTMLVideoElement>(null);
   const scannerRef = useRef<QrScanner | null>(null);
+  const videoTrackRef = useRef<MediaStreamTrack | null>(null);
   const handledRef = useRef(false);
   const [status, setStatus] = useState('카메라를 준비하고 있습니다.');
   const [running, setRunning] = useState(false);
+  const [zoomRange, setZoomRange] = useState<ZoomRange | null>(null);
+  const [zoom, setZoom] = useState(1);
 
   const start = useCallback(async () => {
     handledRef.current = false;
@@ -51,6 +58,18 @@ export function QrCameraScanner() {
     try {
       setStatus('카메라에서 출석 QR을 찾아주세요.');
       await scannerRef.current.start();
+      const stream = videoRef.current.srcObject instanceof MediaStream ? videoRef.current.srcObject : null;
+      const videoTrack = stream?.getVideoTracks()[0] ?? null;
+      videoTrackRef.current = videoTrack;
+      const capabilities = videoTrack?.getCapabilities() as ZoomCapabilities | undefined;
+      const zoomCapability = capabilities?.zoom;
+      if (zoomCapability && zoomCapability.max > zoomCapability.min) {
+        const currentZoom = (videoTrack?.getSettings() as ZoomSettings | undefined)?.zoom ?? zoomCapability.min;
+        setZoomRange({ min: zoomCapability.min, max: zoomCapability.max, step: zoomCapability.step ?? .1 });
+        setZoom(currentZoom);
+      } else {
+        setZoomRange(null);
+      }
       setRunning(true);
     } catch (error) {
       setRunning(false);
@@ -69,12 +88,26 @@ export function QrCameraScanner() {
 
   const stop = () => {
     scannerRef.current?.stop();
+    videoTrackRef.current = null;
+    setZoomRange(null);
     setRunning(false);
     setStatus('카메라가 꺼졌습니다. 다시 시작하려면 버튼을 눌러 주세요.');
   };
 
+  const updateZoom = async (value: number) => {
+    const track = videoTrackRef.current;
+    if (!track) return;
+    setZoom(value);
+    try {
+      await track.applyConstraints({ advanced: [{ zoom: value } as MediaTrackConstraintSet] });
+    } catch {
+      setStatus('이 기기에서는 카메라 확대를 적용할 수 없습니다. QR에 조금 더 가까이 이동해 주세요.');
+    }
+  };
+
   return <div className="qr-camera-scanner">
     <div className="qr-video-frame"><video ref={videoRef} playsInline muted aria-label="QR 출석 카메라 화면" /><div className="qr-scan-guide" aria-hidden="true" /></div>
+    {running && zoomRange && <label className="qr-camera-zoom"><span>카메라 확대</span><input type="range" min={zoomRange.min} max={zoomRange.max} step={zoomRange.step} value={zoom} onChange={(event) => void updateZoom(Number(event.target.value))}/><b>{zoom.toFixed(1)}×</b></label>}
     <p className={running ? 'camera-status active' : 'camera-status'}>{status}</p>
     <div className="qr-camera-actions">{running ? <button type="button" onClick={stop}>카메라 끄기</button> : <button type="button" onClick={() => void start()}>카메라 다시 켜기</button>}</div>
   </div>;
