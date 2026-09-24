@@ -29,7 +29,7 @@ export default async function GemStatisticsPage() {
 
   return <DashboardShell profile={{ full_name: profile.full_name, role: profile.role as AppRole }} activeHref="/dashboard/points">
     <Link href="/dashboard/points" className="back-home-button"><span aria-hidden="true">←</span> 드림보석관리로</Link>
-    <div className="module-heading"><div><p className="eyebrow">GEM STATISTICS</p><h1>보석 통계</h1><span>학생별 보유 보석 순위와 학년별 현황을 확인합니다.</span></div></div>
+    <div className="module-heading"><div><p className="eyebrow">GEM STATISTICS</p><h1>보석 통계</h1><span>학생별 보유 보석 순위와 학년별 현황을 확인합니다.</span></div>{profile.role === 'admin' && <Link className="gem-ranking-display-link" href="/dashboard/points/ranking-display" target="_blank">전체 보석 순위 공개</Link>}</div>
     {error ? <p className="form-alert error">보석 통계를 불러오지 못했습니다. {error.message}</p> : <GemStatistics students={rankingStudents}/>} 
   </DashboardShell>;
 }
