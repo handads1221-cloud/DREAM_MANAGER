@@ -7,8 +7,10 @@ import { createClient } from '@/lib/supabase/client';
 import { avatarPosition } from '@/lib/quiz-avatars';
 
 type Question = { id: string; prompt: string; position: number; durationSeconds: number; options: { id: string; label: string; position: number; isCorrect: boolean }[] };
-type Room = { id: string; code: string; state: string; currentQuestionIndex: number; questionStartedAt: string | null };
+type Room = { id: string; code: string; controlToken: string; state: string; currentQuestionIndex: number; questionStartedAt: string | null };
+type RoomControlResult = { state: string; current_question_index: number; question_started_at: string | null };
 type Participant = { id: string; display_name: string; avatar_key: string; score: number };
+type HostState = { state: string; current_question_index: number; question_started_at: string | null; participants: Participant[]; answer_count: number };
 
 export function QuizHost({ room: initialRoom, quiz, joinUrl, qrDataUrl }: { room: Room; quiz: { title: string; description: string; questions: Question[] }; joinUrl: string; qrDataUrl: string }) {
   const router = useRouter();
@@ -28,29 +30,33 @@ export function QuizHost({ room: initialRoom, quiz, joinUrl, qrDataUrl }: { room
     await supabase.removeChannel(channel);
   }, [room.code, supabase]);
   const refresh = useCallback(async () => {
-    const [{ data: roomData }, { data: participantData }] = await Promise.all([
-      supabase.from('quiz_rooms').select('state,current_question_index,question_started_at').eq('id', room.id).single(),
-      supabase.from('quiz_participants').select('id,display_name,avatar_key,score').eq('room_id', room.id).order('score', { ascending: false }).order('display_name', { ascending: true }),
-    ]);
-    if (roomData) setRoom((current) => ({ ...current, state: roomData.state, currentQuestionIndex: roomData.current_question_index, questionStartedAt: roomData.question_started_at }));
-    setParticipants(participantData ?? []);
-    if (question) { const { count } = await supabase.from('quiz_answers').select('id', { count: 'exact', head: true }).eq('room_id', room.id).eq('question_id', question.id); setAnswerCount(count ?? 0); }
-    else setAnswerCount(0);
-  }, [question, room.id, supabase]);
+    const { data, error: refreshError } = await supabase.rpc('get_live_quiz_host_state', { requested_room: room.id, requested_token: room.controlToken });
+    if (refreshError) { setError('진행 정보를 불러오지 못했습니다. 화면을 새로고침해 주세요.'); return; }
+    const hostState = data as HostState;
+    setRoom((current) => ({ ...current, state: hostState.state, currentQuestionIndex: hostState.current_question_index, questionStartedAt: hostState.question_started_at }));
+    setParticipants(hostState.participants ?? []);
+    setAnswerCount(hostState.answer_count ?? 0);
+  }, [room.controlToken, room.id, supabase]);
 
   useEffect(() => { const initial = window.setTimeout(() => void refresh(), 0); const timer = window.setInterval(refresh, 1500); const onFullscreen = () => setIsFullscreen(Boolean(document.fullscreenElement)); document.addEventListener('fullscreenchange', onFullscreen); return () => { window.clearTimeout(initial); window.clearInterval(timer); document.removeEventListener('fullscreenchange', onFullscreen); }; }, [refresh]);
   useEffect(() => { if (room.state !== 'question' || !question || !room.questionStartedAt) { const reset = window.setTimeout(() => setSecondsLeft(0), 0); return () => window.clearTimeout(reset); } const tick = () => { const elapsed = (Date.now() - new Date(room.questionStartedAt!).getTime()) / 1000; setSecondsLeft(Math.max(0, Math.ceil(question.durationSeconds - elapsed))); }; const timer = window.setInterval(tick, 250); return () => window.clearInterval(timer); }, [room.state, room.questionStartedAt, question]);
 
-  async function updateRoom(patch: Record<string, unknown>, event: string) {
+  async function updateRoom(state: 'question' | 'reveal' | 'finished', questionIndex: number | null, event: string) {
     setError('');
-    const { error: updateError } = await supabase.from('quiz_rooms').update(patch).eq('id', room.id);
+    const { data, error: updateError } = await supabase.rpc('control_live_quiz_room', {
+      requested_room: room.id,
+      requested_token: room.controlToken,
+      requested_state: state,
+      requested_question_index: questionIndex,
+    });
     if (updateError) { setError('진행 상태를 저장하지 못했습니다. 잠시 후 다시 눌러 주세요.'); return; }
-    await refresh();
+    const updated = data as RoomControlResult;
+    setRoom((current) => ({ ...current, state: updated.state, currentQuestionIndex: updated.current_question_index, questionStartedAt: updated.question_started_at }));
     await broadcast(event);
   }
-  async function startQuestion(index: number) { await updateRoom({ state: 'question', current_question_index: index }, 'state'); }
-  async function reveal() { if (room.state === 'question') await updateRoom({ state: 'reveal' }, 'state'); }
-  async function next() { if (room.currentQuestionIndex + 1 < quiz.questions.length) await startQuestion(room.currentQuestionIndex + 1); else await updateRoom({ state: 'finished' }, 'state'); }
+  async function startQuestion(index: number) { await updateRoom('question', index, 'state'); }
+  async function reveal() { if (room.state === 'question') await updateRoom('reveal', room.currentQuestionIndex, 'state'); }
+  async function next() { if (room.currentQuestionIndex + 1 < quiz.questions.length) await startQuestion(room.currentQuestionIndex + 1); else await updateRoom('finished', room.currentQuestionIndex, 'state'); }
   async function toggleFullscreen() { if (document.fullscreenElement) await document.exitFullscreen(); else await document.documentElement.requestFullscreen(); }
 
   return <main className="quiz-host-page">
