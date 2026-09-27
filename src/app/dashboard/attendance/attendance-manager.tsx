@@ -1,14 +1,14 @@
 'use client';
 
 import { useMemo, useState, useTransition } from 'react';
-import { setAttendanceStatisticsExclusion, setGuestAttendanceCount, updateBulkAttendance } from './actions';
+import { setGuestAttendanceCount, updateBulkAttendance } from './actions';
 
 type Student = { id: string; full_name: string; grade: number; class_name: string | null };
 type AttendanceRecord = { student_id: string; status: string; checked_at: string };
 
 const statusLabel: Record<string, string> = { present: '출석', late: '지각', excused: '사유결석', absent: '결석' };
 
-export function AttendanceManager({ eventId, serviceDate, initialStudents, initialRecords, initialGuestCount, role, isStatisticsExcluded, exclusionReason }: { eventId: string | null; serviceDate: string; initialStudents: Student[]; initialRecords: AttendanceRecord[]; initialGuestCount: number; role: 'admin' | 'teacher'; isStatisticsExcluded: boolean; exclusionReason: string | null }) {
+export function AttendanceManager({ eventId, serviceDate, initialStudents, initialRecords, initialGuestCount, isStatisticsExcluded, exclusionReason }: { eventId: string | null; serviceDate: string; initialStudents: Student[]; initialRecords: AttendanceRecord[]; initialGuestCount: number; isStatisticsExcluded: boolean; exclusionReason: string | null }) {
   const [grade, setGrade] = useState<number | 'all'>('all');
   const [statusFilter, setStatusFilter] = useState<'all' | 'present' | 'absent'>('all');
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -44,17 +44,6 @@ export function AttendanceManager({ eventId, serviceDate, initialStudents, initi
       setSelected(new Set()); setFeedback({ kind: 'success', text: result.message });
     });
   };
-  const toggleExclusion = () => {
-    const next = !isStatisticsExcluded;
-    const question = next ? '이 날짜를 별도 예배 없음으로 지정할까요? 기존 출석 기록과 출석 보석은 취소됩니다.' : '이 날짜를 정상 주일예배로 복원할까요?';
-    if (!window.confirm(question)) return;
-    const formData = new FormData(); formData.set('service_date', serviceDate); formData.set('excluded', String(next));
-    startTransition(async () => {
-      const result = await setAttendanceStatisticsExclusion(formData);
-      if (!result.ok) { setFeedback({ kind: 'error', text: result.message }); return; }
-      window.location.reload();
-    });
-  };
   const saveGuestCount = () => {
     if (isStatisticsExcluded) { setFeedback({ kind: 'error', text: '별도 예배가 없는 날짜에는 새친구 출석을 등록할 수 없습니다.' }); return; }
     const formData = new FormData(); formData.set('service_date', serviceDate); formData.set('guest_count', String(guestDraft));
@@ -66,7 +55,6 @@ export function AttendanceManager({ eventId, serviceDate, initialStudents, initi
   };
 
   return <section className="attendance-manager">
-    {role === 'admin' && <div className={`attendance-exclusion-control${isStatisticsExcluded ? ' active' : ''}`}><div><b>{isStatisticsExcluded ? '통계 제외됨 · 예배 없음' : '별도 예배가 없는 주일인가요?'}</b><span>{exclusionReason ?? '전세대 이음으로 교회학교 별도 예배 없음'}</span></div><button type="button" onClick={toggleExclusion} disabled={pending}>{isStatisticsExcluded ? '정상 주일로 복원' : '통계에서 제외'}</button></div>}
     {isStatisticsExcluded && <p className="attendance-no-service-notice"><strong>이 날짜는 출석 통계에서 제외됩니다.</strong><span>{exclusionReason}</span><small>출석 입력·QR 출석·출석 보석 지급이 중지됩니다.</small></p>}
     <div className="attendance-live-summary compact"><div><span>이번 주 전체 출석</span><strong>{presentCount + guestCount}<small>명</small></strong><em>등록 학생 {presentCount}명 · 새친구 {guestCount}명</em></div></div>
     <div className="attendance-guest-control"><div><b>미등록 새친구 출석</b><span>학생 명단에 등록하지 않고 해당 날짜의 출석인원에만 합산합니다.</span></div><label><span>새친구</span><input type="number" min="0" max="999" inputMode="numeric" value={guestDraft} onChange={(event) => setGuestDraft(Math.max(0, Math.min(999, Number(event.target.value) || 0)))} disabled={pending || isStatisticsExcluded}/><span>명</span></label><button type="button" onClick={saveGuestCount} disabled={pending || isStatisticsExcluded}>{pending ? '저장 중…' : '인원 저장'}</button></div>

@@ -31,6 +31,7 @@
 .attendance-exclusion-control.active { border-color: #e2b9b4; background: #fff3f1; }
 .attendance-exclusion-control.active b { color: #9b3f37; }
 .attendance-exclusion-control.active button { border: 1px solid #e2b9b4; background: #fff; color: #8a3f38; }
+.attendance-exclusion-inline { margin-left: auto; display: flex; align-items: center; gap: 6px; }.attendance-exclusion-inline button { min-height: 40px; padding: 0 12px; border: 1px solid #e7d4ad; border-radius: 10px; background: #fffaf0; color: #805b20; font-size: 9px; font-weight: 850; cursor: pointer; }.attendance-exclusion-inline button:disabled { opacity: .5; cursor: wait; }.attendance-exclusion-inline.active button { border-color: #e2b9b4; background: #fff1ef; color: #9b3f37; }.attendance-exclusion-inline span { max-width: 180px; color: #a7443d; font-size: 8px; }
 .attendance-no-service-notice { display: grid; gap: 5px; margin: 0; padding: 18px; border-radius: 16px; background: #3f302c; color: #fff; }
 .attendance-no-service-notice strong { font-size: 14px; }
 .attendance-no-service-notice span { font-size: 11px; }
@@ -38,7 +39,7 @@
 .qr-no-service { display: grid; gap: 12px; width: min(720px, 80vw); padding: 36px; border-radius: 28px; background: rgba(255,255,255,.9); box-shadow: 0 24px 80px rgba(48,42,30,.18); text-align: center; }
 .qr-no-service strong { color: #744e28; font-size: clamp(25px, 3vw, 50px); }
 .qr-no-service span { color: #8f765e; font-size: clamp(14px, 1.5vw, 24px); }
-@media (max-width: 640px) { .attendance-exclusion-control { align-items: stretch; flex-direction: column; gap: 12px; } .attendance-exclusion-control button { width: 100%; } }
+@media (max-width: 640px) { .attendance-exclusion-control { align-items: stretch; flex-direction: column; gap: 12px; } .attendance-exclusion-control button { width: 100%; }.attendance-exclusion-inline { margin-left: 0; }.attendance-exclusion-inline button { min-height: 38px; padding: 0 10px; } }
 
 .finance-heading-actions { display: grid; justify-items: end; gap: 6px; }
 .finance-heading-actions a { color: #087b57; font-size: 10px; font-weight: 850; }
