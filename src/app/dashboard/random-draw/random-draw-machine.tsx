@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { clearRandomDrawExclusions, setRandomDrawExclusion } from './actions';
+import { clearRandomDrawExclusions, resetTodayRandomDrawWinners, setRandomDrawExclusion, useTodayAttendanceForRandomDraw } from './actions';
 
 export type DrawStudent = { id: string; fullName: string; grade: number; photoUrl: string | null };
 
@@ -10,8 +10,9 @@ export function RandomDrawMachine({ students, todayWinnerIds, initialExcludedIds
   const [excluded, setExcluded] = useState<Set<string>>(() => new Set(initialExcludedIds));
   const [savingExclusions, setSavingExclusions] = useState<Set<string>>(new Set());
   const [preventDuplicate, setPreventDuplicate] = useState(true);
+  const [wonToday, setWonToday] = useState<Set<string>>(() => new Set(todayWinnerIds));
+  const [bulkPending, setBulkPending] = useState(false);
   const [message, setMessage] = useState('옵션을 선택한 뒤 전용 추첨 화면을 열어 주세요.');
-  const wonToday = useMemo(() => new Set(todayWinnerIds), [todayWinnerIds]);
   const visibleStudents = useMemo(() => students.filter((student) => grade === 'all' || student.grade === Number(grade)), [grade, students]);
   const eligibleCount = visibleStudents.filter((student) => !excluded.has(student.id) && (!preventDuplicate || !wonToday.has(student.id))).length;
 
@@ -35,6 +36,24 @@ export function RandomDrawMachine({ students, todayWinnerIds, initialExcludedIds
     const result = await clearRandomDrawExclusions();
     if (!result.ok) setExcluded(previous);
     setMessage(result.message);
+  }
+
+  async function applyTodayAttendance() {
+    if (bulkPending) return;
+    setBulkPending(true);
+    const result = await useTodayAttendanceForRandomDraw();
+    if (result.ok && result.excludedIds) setExcluded(new Set(result.excludedIds));
+    setMessage(result.message);
+    setBulkPending(false);
+  }
+
+  async function resetWinners() {
+    if (bulkPending || !window.confirm('오늘 당첨 기록을 초기화할까요? 제외 LIST는 그대로 유지됩니다.')) return;
+    setBulkPending(true);
+    const result = await resetTodayRandomDrawWinners();
+    if (result.ok) setWonToday(new Set());
+    setMessage(result.message);
+    setBulkPending(false);
   }
 
   function openDrawWindow() {
@@ -61,6 +80,7 @@ export function RandomDrawMachine({ students, todayWinnerIds, initialExcludedIds
         <aside className="random-draw-controls">
           <label className="random-control-label">학년 선택<select value={grade} onChange={(event) => setGrade(event.target.value)}><option value="all">전체 학년</option>{[1,2,3,4,5,6].map((value) => <option key={value} value={value}>{value}학년</option>)}</select></label>
           <label className="random-switch"><input type="checkbox" checked={preventDuplicate} onChange={(event) => setPreventDuplicate(event.target.checked)}/><span><b>같은 날 중복 당첨 방지</b><small>오늘 당첨된 학생은 다시 뽑지 않아요.</small></span></label>
+          <div className="random-draw-bulk-actions"><button type="button" onClick={applyTodayAttendance} disabled={bulkPending}>오늘 출석자만 참여</button><small>오늘 미출석자는 제외 LIST에 자동 체크합니다.</small><button className="reset" type="button" onClick={resetWinners} disabled={bulkPending}>당첨 기록 초기화</button><small>오늘 당첨자만 초기화하며 제외 LIST는 유지합니다.</small></div>
           <div className="random-exclusion-heading"><div><b>제외 LIST</b><small>{excluded.size}명 제외 중 · 자동 저장</small></div><button type="button" onClick={clearExcluded} disabled={!excluded.size}>전체 해제</button></div>
           <div className="random-exclusion-list">{visibleStudents.map((student) => <label key={student.id} className={excluded.has(student.id) ? 'excluded' : ''}><input type="checkbox" checked={excluded.has(student.id)} disabled={savingExclusions.has(student.id)} onChange={() => toggleExcluded(student.id)}/><span>{student.grade}학년</span><b>{student.fullName}</b>{savingExclusions.has(student.id) ? <em>저장 중</em> : wonToday.has(student.id) ? <em>오늘 당첨</em> : null}</label>)}</div>
         </aside>

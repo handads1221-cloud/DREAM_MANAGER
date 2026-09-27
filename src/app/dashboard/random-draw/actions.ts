@@ -8,6 +8,7 @@ export type DrawResult =
   | { ok: false; message: string };
 
 export type ExclusionResult = { ok: boolean; message: string };
+export type AttendanceExclusionResult = ExclusionResult & { excludedIds?: string[] };
 
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -42,6 +43,27 @@ export async function clearRandomDrawExclusions(): Promise<ExclusionResult> {
   if (error) return { ok: false, message: `제외 명단을 초기화하지 못했습니다. (${error.message})` };
   revalidatePath('/dashboard/random-draw');
   return { ok: true, message: '저장된 제외 명단을 모두 해제했습니다.' };
+}
+
+export async function useTodayAttendanceForRandomDraw(): Promise<AttendanceExclusionResult> {
+  const context = await getAdminContext();
+  if (!context) return { ok: false, message: '관리자 로그인 상태를 확인해 주세요.' };
+  const { data, error } = await context.supabase.rpc('sync_random_draw_exclusions_to_today_attendance');
+  if (error) return { ok: false, message: `오늘 출석 명단을 적용하지 못했습니다. (${error.message})` };
+  const { data: exclusions, error: listError } = await context.supabase.from('random_draw_exclusions').select('student_id').eq('user_id', context.userId);
+  if (listError) return { ok: false, message: `적용된 제외 명단을 불러오지 못했습니다. (${listError.message})` };
+  const summary = data?.[0] as { attendee_count?: number; excluded_count?: number } | undefined;
+  revalidatePath('/dashboard/random-draw');
+  return { ok: true, excludedIds: (exclusions ?? []).map((row) => row.student_id), message: `오늘 출석자 ${summary?.attendee_count ?? 0}명만 추첨에 참여합니다. 미출석 ${summary?.excluded_count ?? 0}명은 제외했습니다.` };
+}
+
+export async function resetTodayRandomDrawWinners(): Promise<ExclusionResult> {
+  const context = await getAdminContext();
+  if (!context) return { ok: false, message: '관리자 로그인 상태를 확인해 주세요.' };
+  const { data, error } = await context.supabase.rpc('reset_today_random_draw_results');
+  if (error) return { ok: false, message: `오늘 당첨 기록을 초기화하지 못했습니다. (${error.message})` };
+  revalidatePath('/dashboard/random-draw');
+  return { ok: true, message: `오늘 당첨 기록 ${Number(data ?? 0)}건을 초기화했습니다. 제외 LIST는 그대로 유지됩니다.` };
 }
 
 export async function drawRandomStudent(formData: FormData): Promise<DrawResult> {
