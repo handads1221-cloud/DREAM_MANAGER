@@ -698,6 +698,25 @@ button { color: inherit; }
 @media(max-width:760px){.birthday-celebration-workspace{grid-template-columns:1fr}.birthday-celebrants-preview{min-height:0}.birthday-celebrant-list{grid-template-columns:1fr}.birthday-celebration-launch{grid-template-columns:1fr}.birthday-celebration-launch button{grid-column:1;grid-row:auto;width:100%}.birthday-month-grid-selector{grid-template-columns:repeat(4,1fr)}}
 
 .birthday-display-content { z-index: 1; top: 50%; bottom: auto; aspect-ratio: 16 / 7; transform: translateY(-50%); isolation: isolate; }
+
+/* Birthday celebration: heart-shaped name panel and gently rising heart bubbles. */
+.birthday-display-content { top: 6vh; right: auto; left: 55%; width: min(70vw,1220px); aspect-ratio: 47 / 20; transform: translateX(-50%); }
+.birthday-display-copy { width: 82%; max-height: 78%; transform: translateY(-2%); }
+.birthday-display-copy>p { font-size: clamp(27px,2.65vw,46px); }
+.birthday-display-copy>h1 { margin: 4px 0 16px; font-size: clamp(16px,1.35vw,24px); }
+.birthday-display-names b { font-size: clamp(28px,2.5vw,46px); }
+.birthday-display-names.medium b { font-size: clamp(24px,2.1vw,38px); }
+.birthday-display-names.many b { font-size: clamp(20px,1.7vw,30px); }
+.birthday-heart-shower i { top: auto; bottom: -12%; filter: drop-shadow(0 3px 5px rgba(179,94,128,.16)); will-change: transform,opacity; }
+.birthday-display.celebrating .birthday-heart-shower i { animation-name: birthdayHeartBubble; animation-timing-function: ease-out; animation-iteration-count: infinite; }
+.birthday-display:not(.celebrating) .birthday-heart-shower i { animation: none; opacity: 0; }
+@keyframes birthdayHeartBubble {
+  0% { opacity: 0; transform: translate3d(0,10vh,0) scale(.55) rotate(-8deg); }
+  12% { opacity: .68; }
+  38% { transform: translate3d(-2.8vw,-34vh,0) scale(.82) rotate(7deg); }
+  68% { opacity: .58; transform: translate3d(3.2vw,-70vh,0) scale(1.02) rotate(-5deg); }
+  100% { opacity: 0; transform: translate3d(-1.5vw,-118vh,0) scale(1.18) rotate(9deg); }
+}
 @media (max-width:899px) { .gem-ranking-display-link { display:none; } }
 
 /* Full-screen gem ranking: approved Figma direction */
