@@ -27,11 +27,12 @@ export async function addLedgerEntry(formData: FormData) {
   const amount = Number(formData.get('amount'));
   const category = String(formData.get('category') ?? '').trim();
   const transactionDate = String(formData.get('transaction_date'));
-  if (!['income', 'expense'].includes(entryType) || !category || !transactionDate || !Number.isSafeInteger(amount) || amount <= 0) go('/dashboard/finance', 'error', '유형·비목·일자·금액을 확인해 주세요.');
-  const { error } = await context.supabase.from('finance_ledger').insert({ transaction_date: transactionDate, entry_type: entryType, category, amount, memo: String(formData.get('memo') ?? '').trim() || null, created_by: context.id });
-  if (error) go('/dashboard/finance', 'error', error.message);
+  const submissionKey = String(formData.get('submission_key') ?? '');
+  if (!['income', 'expense'].includes(entryType) || !category || !transactionDate || !Number.isSafeInteger(amount) || amount <= 0 || !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(submissionKey)) go('/dashboard/finance', 'error', '유형·비목·일자·금액을 확인해 주세요.');
+  const { error } = await context.supabase.from('finance_ledger').insert({ transaction_date: transactionDate, entry_type: entryType, category, amount, memo: String(formData.get('memo') ?? '').trim() || null, created_by: context.id, submission_key: submissionKey });
+  if (error && error.code !== '23505') go('/dashboard/finance', 'error', error.message);
   revalidatePath('/dashboard/finance');
-  go('/dashboard/finance', 'message', '장부에 등록했습니다.');
+  go('/dashboard/finance', 'message', error?.code === '23505' ? '이미 처리된 등록 요청입니다. 중복 등록하지 않았습니다.' : '장부에 등록했습니다.');
 }
 
 export async function updateLedgerMemo(formData: FormData) {
