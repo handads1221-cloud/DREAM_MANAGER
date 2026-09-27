@@ -691,7 +691,7 @@ button { color: inherit; }
 
 .points-row button.minus-five { width: 48px; background: #f9dedb; color: #963b35; font-size: 15px; }
 
-.random-draw-bulk-actions { padding: 12px; display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 5px 10px; border: 1px solid #d8e7e1; border-radius: 14px; background: #f7fbf9; }.random-draw-bulk-actions button { min-height: 39px; padding: 0 13px; border: 0; border-radius: 10px; background: #139b70; color: #fff; font-size: 10px; font-weight: 900; cursor: pointer; }.random-draw-bulk-actions button.reset { background: #fff2ef; color: #a7443d; }.random-draw-bulk-actions button:disabled { opacity: .45; cursor: not-allowed; }.random-draw-bulk-actions small { color: #6b7b75; font-size: 8px; line-height: 1.4; }
+.random-draw-bulk-actions { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; }.random-draw-bulk-actions button { min-height: 44px; padding: 0 10px; border: 0; border-radius: 11px; background: #139b70; color: #fff; font-size: 10px; font-weight: 900; line-height: 1.35; cursor: pointer; }.random-draw-bulk-actions button.reset { background: #fff2ef; color: #a7443d; }.random-draw-bulk-actions button:disabled { opacity: .45; cursor: not-allowed; }
 @media (max-width:899px) { .gem-ranking-display-link { display:none; } }
 
 /* Full-screen gem ranking: approved Figma direction */
