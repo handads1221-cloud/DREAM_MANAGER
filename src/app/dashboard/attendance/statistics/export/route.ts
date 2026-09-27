@@ -33,7 +33,7 @@ export async function GET(request: Request) {
   if (grade !== null) studentQuery = studentQuery.eq('grade', grade);
   const [{ data: students }, { data: events }] = await Promise.all([
     studentQuery,
-    supabase.from('attendance_events').select('id,service_date,title,is_statistics_excluded,statistics_exclusion_reason').gte('service_date', from).lte('service_date', to).order('service_date'),
+    supabase.from('attendance_events').select('id,service_date,title,is_statistics_excluded,statistics_exclusion_reason,guest_count').gte('service_date', from).lte('service_date', to).order('service_date'),
   ]);
   const studentRows = students ?? [];
   const eventRows = events ?? [];
@@ -94,6 +94,13 @@ export async function GET(request: Request) {
     row.getCell(2).alignment = { horizontal: 'left', vertical: 'middle' };
     row.getCell(lastColumn).numFmt = '0.0%';
   });
+  if (grade === null) {
+    const guestMarks = dateColumns.map((date) => eventRows.find((event) => event.service_date === date)?.guest_count || '');
+    const guestTotal = eventRows.reduce((sum, event) => sum + (event.guest_count ?? 0), 0);
+    const row = roster.addRow(['미등록', '새친구', '', ...guestMarks, guestTotal, '', '']);
+    row.font = { bold: true, color: { argb: 'FF087B57' } };
+    row.alignment = { horizontal: 'center', vertical: 'middle' };
+  }
   roster.columns.forEach((column, index) => { column.width = index === 1 ? 12 : index === 2 ? 10 : index >= 3 && index < 3 + dateColumns.length ? 7 : 9; });
   roster.getColumn(1).width = 8;
   roster.eachRow((row, rowNumber) => { if (rowNumber >= 4) row.eachCell((cell) => { cell.border = { top: { style: 'thin', color: { argb: 'FFDCE5E1' } }, left: { style: 'thin', color: { argb: 'FFDCE5E1' } }, bottom: { style: 'thin', color: { argb: 'FFDCE5E1' } }, right: { style: 'thin', color: { argb: 'FFDCE5E1' } } }; }); });
@@ -102,18 +109,19 @@ export async function GET(request: Request) {
 
   const daily = workbook.addWorksheet('날짜별 집계', { views: [{ state: 'frozen', ySplit: 2 }] });
   daily.addRow(['날짜별 출석 집계']);
-  daily.mergeCells(1, 1, 1, 6);
-  daily.addRow(['날짜', '예배 상태', '전체 학생', '출석', '결석', '출석률']);
+  daily.mergeCells(1, 1, 1, 8);
+  daily.addRow(['날짜', '예배 상태', '등록 학생', '등록 출석', '새친구', '전체 출석', '등록 결석', '등록 출석률']);
   dateColumns.forEach((date) => {
     if (excludedDates.has(date)) {
-      daily.addRow([new Date(`${date}T00:00:00Z`), '예배 없음', '', '', '', '']);
+      daily.addRow([new Date(`${date}T00:00:00Z`), '예배 없음', '', '', '', '', '', '']);
       return;
     }
     const eventId = eventByDate.get(date);
     const attended = studentRows.filter((student) => ['present', 'late'].includes(eventId ? recordMap.get(`${eventId}:${student.id}`) ?? '' : '')).length;
-    daily.addRow([new Date(`${date}T00:00:00Z`), '주일예배', studentRows.length, attended, studentRows.length - attended, studentRows.length ? attended / studentRows.length : 0]);
+    const guests = eventRows.find((event) => event.service_date === date)?.guest_count ?? 0;
+    daily.addRow([new Date(`${date}T00:00:00Z`), '주일예배', studentRows.length, attended, guests, attended + guests, studentRows.length - attended, studentRows.length ? attended / studentRows.length : 0]);
   });
-  daily.getColumn(1).numFmt = 'yyyy-mm-dd'; daily.getColumn(6).numFmt = '0.0%';
+  daily.getColumn(1).numFmt = 'yyyy-mm-dd'; daily.getColumn(8).numFmt = '0.0%';
   daily.columns.forEach((column) => { column.width = 16; });
 
   const gradeSheet = workbook.addWorksheet('학년별 집계');

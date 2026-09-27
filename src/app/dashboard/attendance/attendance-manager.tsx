@@ -1,18 +1,20 @@
 'use client';
 
 import { useMemo, useState, useTransition } from 'react';
-import { setAttendanceStatisticsExclusion, updateBulkAttendance } from './actions';
+import { setAttendanceStatisticsExclusion, setGuestAttendanceCount, updateBulkAttendance } from './actions';
 
 type Student = { id: string; full_name: string; grade: number; class_name: string | null };
 type AttendanceRecord = { student_id: string; status: string; checked_at: string };
 
 const statusLabel: Record<string, string> = { present: '출석', late: '지각', excused: '사유결석', absent: '결석' };
 
-export function AttendanceManager({ eventId, serviceDate, initialStudents, initialRecords, role, isStatisticsExcluded, exclusionReason }: { eventId: string | null; serviceDate: string; initialStudents: Student[]; initialRecords: AttendanceRecord[]; role: 'admin' | 'teacher'; isStatisticsExcluded: boolean; exclusionReason: string | null }) {
+export function AttendanceManager({ eventId, serviceDate, initialStudents, initialRecords, initialGuestCount, role, isStatisticsExcluded, exclusionReason }: { eventId: string | null; serviceDate: string; initialStudents: Student[]; initialRecords: AttendanceRecord[]; initialGuestCount: number; role: 'admin' | 'teacher'; isStatisticsExcluded: boolean; exclusionReason: string | null }) {
   const [grade, setGrade] = useState<number | 'all'>('all');
   const [statusFilter, setStatusFilter] = useState<'all' | 'present' | 'absent'>('all');
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [records, setRecords] = useState(() => new Map(initialRecords.map((record) => [record.student_id, record])));
+  const [guestCount, setGuestCount] = useState(initialGuestCount);
+  const [guestDraft, setGuestDraft] = useState(initialGuestCount);
   const [feedback, setFeedback] = useState<{ kind: 'success' | 'error'; text: string } | null>(null);
   const [pending, startTransition] = useTransition();
   const visible = useMemo(() => initialStudents.filter((student) => {
@@ -53,11 +55,21 @@ export function AttendanceManager({ eventId, serviceDate, initialStudents, initi
       window.location.reload();
     });
   };
+  const saveGuestCount = () => {
+    if (isStatisticsExcluded) { setFeedback({ kind: 'error', text: '별도 예배가 없는 날짜에는 새친구 출석을 등록할 수 없습니다.' }); return; }
+    const formData = new FormData(); formData.set('service_date', serviceDate); formData.set('guest_count', String(guestDraft));
+    startTransition(async () => {
+      const result = await setGuestAttendanceCount(formData);
+      if (result.ok) setGuestCount(guestDraft);
+      setFeedback({ kind: result.ok ? 'success' : 'error', text: result.message });
+    });
+  };
 
   return <section className="attendance-manager">
     {role === 'admin' && <div className={`attendance-exclusion-control${isStatisticsExcluded ? ' active' : ''}`}><div><b>{isStatisticsExcluded ? '통계 제외됨 · 예배 없음' : '별도 예배가 없는 주일인가요?'}</b><span>{exclusionReason ?? '전세대 이음으로 교회학교 별도 예배 없음'}</span></div><button type="button" onClick={toggleExclusion} disabled={pending}>{isStatisticsExcluded ? '정상 주일로 복원' : '통계에서 제외'}</button></div>}
     {isStatisticsExcluded && <p className="attendance-no-service-notice"><strong>이 날짜는 출석 통계에서 제외됩니다.</strong><span>{exclusionReason}</span><small>출석 입력·QR 출석·출석 보석 지급이 중지됩니다.</small></p>}
-    <div className="attendance-live-summary compact"><div><span>이번 주 출석</span><strong>{presentCount}<small> / {initialStudents.length}명</small></strong></div></div>
+    <div className="attendance-live-summary compact"><div><span>이번 주 전체 출석</span><strong>{presentCount + guestCount}<small>명</small></strong><em>등록 학생 {presentCount}명 · 새친구 {guestCount}명</em></div></div>
+    <div className="attendance-guest-control"><div><b>미등록 새친구 출석</b><span>학생 명단에 등록하지 않고 해당 날짜의 출석인원에만 합산합니다.</span></div><label><span>새친구</span><input type="number" min="0" max="999" inputMode="numeric" value={guestDraft} onChange={(event) => setGuestDraft(Math.max(0, Math.min(999, Number(event.target.value) || 0)))} disabled={pending || isStatisticsExcluded}/><span>명</span></label><button type="button" onClick={saveGuestCount} disabled={pending || isStatisticsExcluded}>{pending ? '저장 중…' : '인원 저장'}</button></div>
     <div className="attendance-grade-summary">{[1,2,3,4,5,6].map((item) => <span key={item}><b>{item}학년</b><strong>{presentByGrade[item] ?? 0}<small>/{counts[item] ?? 0}명</small></strong></span>)}</div>
     <div className="attendance-filter-stack"><div className="attendance-grade-filter"><button type="button" className={grade === 'all' ? 'active' : ''} onClick={() => { setGrade('all'); setSelected(new Set()); }}>전체 <span>{initialStudents.length}</span></button>{[1,2,3,4,5,6].map((item) => <button type="button" key={item} className={grade === item ? 'active' : ''} onClick={() => { setGrade(item); setSelected(new Set()); }}>{item}학년 <span>{counts[item] ?? 0}</span></button>)}</div><div className="attendance-status-filter" aria-label="출석 상태 필터"><button type="button" className={statusFilter === 'all' ? 'active' : ''} onClick={() => { setStatusFilter('all'); setSelected(new Set()); }}>전체 보기</button><button type="button" className={statusFilter === 'present' ? 'active' : ''} onClick={() => { setStatusFilter('present'); setSelected(new Set()); }}>출석만 보기</button><button type="button" className={statusFilter === 'absent' ? 'active' : ''} onClick={() => { setStatusFilter('absent'); setSelected(new Set()); }}>미출석만 보기</button></div></div>
     <div className="attendance-bulk-bar"><label><input type="checkbox" checked={allVisibleSelected} onChange={toggleAll} disabled={isStatisticsExcluded}/> 현재 목록 전체선택</label><span>{selected.size}명 선택</span><button onClick={() => runAction('present')} disabled={pending || selected.size === 0 || isStatisticsExcluded}>선택 출석</button><button className="cancel" onClick={() => runAction('cancel')} disabled={pending || selected.size === 0 || isStatisticsExcluded}>선택 출석취소</button></div>

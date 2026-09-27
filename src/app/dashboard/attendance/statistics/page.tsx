@@ -23,7 +23,7 @@ export default async function AttendanceStatisticsPage({ searchParams }: PagePro
   const year = validYear(params.year, currentYear);
   const from = `${year}-01-01`;
   const to = `${year}-12-31`;
-  const { data: events } = await supabase.from('attendance_events').select('id,service_date,is_statistics_excluded').gte('service_date', from).lte('service_date', to).order('service_date');
+  const { data: events } = await supabase.from('attendance_events').select('id,service_date,is_statistics_excluded,guest_count').gte('service_date', from).lte('service_date', to).order('service_date');
   const allEventRows = events ?? [];
   const eventRows = allEventRows.filter((event) => !event.is_statistics_excluded);
   const excludedCount = allEventRows.length - eventRows.length;
@@ -44,7 +44,7 @@ export default async function AttendanceStatisticsPage({ searchParams }: PagePro
   const sundaySets = Array.from({ length: 12 }, () => new Set<string>());
   for (const event of eventRows) {
     const month = Number(event.service_date.slice(5, 7)) - 1;
-    if (new Date(`${event.service_date}T00:00:00Z`).getUTCDay() === 0) sundaySets[month].add(event.service_date);
+    if (new Date(`${event.service_date}T00:00:00Z`).getUTCDay() === 0) { sundaySets[month].add(event.service_date); totals[month] += event.guest_count ?? 0; }
   }
   for (const record of records) {
     const date = eventDate.get(record.event_id);

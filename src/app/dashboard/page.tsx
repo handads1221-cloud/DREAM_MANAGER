@@ -72,7 +72,7 @@ export default async function DashboardPage({ searchParams }: PageProps<'/dashbo
     });
     const [{ data: activeStudents }, { data: events }, { data: teacherRoles }, { data: upcomingPlans }] = await Promise.all([
       supabase.from('students').select('id,full_name,grade,birth_date').eq('is_active', true).order('grade').order('full_name'),
-      supabase.from('attendance_events').select('id, service_date, is_statistics_excluded, statistics_exclusion_reason').gte('service_date', candidateSundayDates[0]).lte('service_date', candidateSundayDates[11]),
+      supabase.from('attendance_events').select('id, service_date, is_statistics_excluded, statistics_exclusion_reason, guest_count').gte('service_date', candidateSundayDates[0]).lte('service_date', candidateSundayDates[11]),
       supabase.from('user_roles').select('user_id').eq('role', 'teacher'),
       supabase.from('weekly_plans').select('id,schedule_date,schedule_time,title').gte('schedule_date', today).order('schedule_date').order('schedule_time').limit(5),
     ]);
@@ -86,6 +86,7 @@ export default async function DashboardPage({ searchParams }: PageProps<'/dashbo
     ]);
     const eventDates = new Map((events ?? []).filter((event) => !event.is_statistics_excluded).map((event) => [event.id, event.service_date]));
     const attendanceByDate = new Map<string, number>();
+    for (const event of events ?? []) if (!event.is_statistics_excluded && sundayDates.includes(event.service_date)) attendanceByDate.set(event.service_date, event.guest_count ?? 0);
     const attendedDatesByStudent = new Map<string, Set<string>>();
     for (const row of attendanceRows ?? []) {
       const serviceDate = eventDates.get(row.event_id);

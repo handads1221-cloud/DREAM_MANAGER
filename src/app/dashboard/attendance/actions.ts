@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/server';
 
 export type BulkAttendanceResult = { ok: true; action: 'present' | 'cancel'; studentIds: string[]; message: string } | { ok: false; message: string };
 export type ExclusionResult = { ok: boolean; message: string };
+export type GuestAttendanceResult = { ok: boolean; message: string };
 
 function isValidDate(value: string) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
@@ -67,6 +68,23 @@ export async function setAttendanceStatisticsExclusion(formData: FormData): Prom
   revalidatePath('/dashboard');
   revalidatePath('/dashboard/points');
   return { ok: true, message: excluded ? '별도 예배가 없는 주일로 지정했습니다. 기존 출석과 자동 지급 보석은 취소됩니다.' : '정상 주일예배로 복원했습니다.' };
+}
+
+export async function setGuestAttendanceCount(formData: FormData): Promise<GuestAttendanceResult> {
+  const serviceDate = String(formData.get('service_date') ?? '');
+  const guestCount = Number(formData.get('guest_count'));
+  if (!isValidDate(serviceDate) || !Number.isInteger(guestCount) || guestCount < 0 || guestCount > 999) return { ok: false, message: '새친구 인원은 0명부터 999명까지 입력해 주세요.' };
+  const supabase = await createClient();
+  const { data } = await supabase.auth.getClaims();
+  if (!data?.claims?.sub) return { ok: false, message: '로그인이 만료되었습니다. 다시 로그인해 주세요.' };
+  const { data: profile } = await supabase.from('profiles').select('role,is_active').eq('id', data.claims.sub).maybeSingle();
+  if (!profile?.is_active || !['admin', 'teacher'].includes(profile.role)) return { ok: false, message: '출석관리 권한이 없습니다.' };
+  const { error } = await supabase.rpc('set_attendance_guest_count', { target_date: serviceDate, new_guest_count: guestCount });
+  if (error) return { ok: false, message: error.message.includes('excluded') ? '별도 예배가 없는 날짜에는 새친구 출석을 등록할 수 없습니다.' : `새친구 인원을 저장하지 못했습니다. (${error.message})` };
+  revalidatePath('/dashboard/attendance');
+  revalidatePath('/dashboard/attendance/statistics');
+  revalidatePath('/dashboard');
+  return { ok: true, message: `새친구 출석 ${guestCount}명을 저장했습니다.` };
 }
 
 export async function submitQr(formData: FormData) {
