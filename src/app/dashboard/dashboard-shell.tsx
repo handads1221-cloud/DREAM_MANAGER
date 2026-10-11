@@ -17,7 +17,13 @@ const menus: Record<AppRole, MenuItem[]> = {
 };
 const mobileMenus: Record<AppRole, MenuItem[]> = {
   admin: [menus.admin[0], menus.admin[1], menus.admin[2], menus.admin[5], menus.admin[11]],
-  teacher: [menus.teacher[0], menus.teacher[1], menus.teacher[2], menus.teacher[4], menus.teacher[7]],
+  teacher: [
+    { icon: 'home', label: '홈', href: '/dashboard' },
+    { icon: 'attendance', label: '출석', href: '/dashboard/attendance' },
+    { icon: 'gem', label: '보석', href: '/dashboard/points' },
+    { icon: 'calendar', label: '계획표', href: '/dashboard/plans' },
+    { icon: 'notice', label: '공지', href: '/dashboard/notices' },
+  ],
   parent: menus.parent,
   student: [menus.student[0], menus.student[1], menus.student[2], menus.student[5]],
   accountant: menus.accountant,
