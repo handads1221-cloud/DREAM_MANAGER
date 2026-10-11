@@ -3,6 +3,26 @@
 import { revalidatePath } from 'next/cache'; import { createClient } from '@/lib/supabase/server';
 export type QuickPointResult = { ok: true; studentId: string; amount: number; message: string } | { ok: false; message: string };
 export type ChatPointResult = { ok: true; changes: { studentId: string; name: string; amount: number }[]; message: string } | { ok: false; message: string };
+type ParsedChatCommand = { names: string[]; quantity: number; action: '지급' | '차감' };
+
+function parseChatPointCommand(message: string): { ok: true; command: ParsedChatCommand } | { ok: false; message: string } {
+  if (!message.includes('보석')) return { ok: false, message: "'보석'이라는 단어가 없습니다. 예: 김하늘 보석 2개 지급" };
+  const markerIndex = message.indexOf('보석');
+  const namesText = message.slice(0, markerIndex).trim();
+  if (!namesText) return { ok: false, message: '학생 이름이 없습니다. 보석 앞에 등록된 학생 이름을 정확히 입력해 주세요.' };
+  const actionMatch = message.match(/(지급|추가|차감)$/);
+  if (!actionMatch) return { ok: false, message: "명령 끝에 '지급' 또는 '차감'을 입력해 주세요. 예: 김하늘 보석 2개 지급" };
+  const actionText = actionMatch[1];
+  const quantityText = message.slice(markerIndex + 2, actionMatch.index).trim();
+  if (!quantityText) return { ok: false, message: '보석 수량이 없습니다. 보석 뒤에 숫자를 입력해 주세요. 예: 보석 2개 지급' };
+  const quantityMatch = quantityText.match(/^(\d+)\s*개?$/);
+  if (!quantityMatch) return { ok: false, message: `수량 '${quantityText}'을 이해하지 못했습니다. 숫자로 입력해 주세요. 예: 보석 2개 지급` };
+  const quantity = Number(quantityMatch[1]);
+  if (!Number.isInteger(quantity) || quantity < 1 || quantity > 999) return { ok: false, message: '보석 수량은 1개부터 999개까지 입력해 주세요.' };
+  const names = [...new Set(namesText.split(/[\s,，]+/).map((name) => name.trim()).filter(Boolean))];
+  if (!names.length || names.length > 50) return { ok: false, message: '한 번에 1명부터 50명까지 처리할 수 있습니다.' };
+  return { ok: true, command: { names, quantity, action: actionText === '차감' ? '차감' : '지급' } };
+}
 export async function awardQuickPoint(formData: FormData): Promise<QuickPointResult> {
   const supabase = await createClient(); const { data } = await supabase.auth.getClaims(); const userId = data?.claims?.sub;
   if (!userId) return { ok: false, message: '로그인이 만료되었습니다.' };
@@ -21,14 +41,9 @@ export async function awardPointsFromChat(rawMessage: string): Promise<ChatPoint
   const message = rawMessage.trim().replace(/[()]/g, '').replace(/\s+/g, ' ');
   if (!message || message.length > 500) return { ok: false, message: '명령은 500자 이내로 입력해 주세요.' };
 
-  const command = message.match(/^(.+?)\s+보석\s*(\d{1,3})\s*개?\s*(지급|추가|차감)$/);
-  if (!command) return { ok: false, message: '예: 김하늘 보석 2개 지급 또는 김하늘,이사랑 보석 1개 차감처럼 입력해 주세요.' };
-
-  const names = [...new Set(command[1].split(/[\s,，]+/).map((name) => name.trim()).filter(Boolean))];
-  const quantity = Number(command[2]);
-  const action = command[3] === '차감' ? '차감' : '지급';
-  if (!names.length || names.length > 50) return { ok: false, message: '한 번에 1명부터 50명까지 처리할 수 있습니다.' };
-  if (!Number.isInteger(quantity) || quantity < 1 || quantity > 999) return { ok: false, message: '보석 수량은 1개부터 999개까지 입력해 주세요.' };
+  const parsed = parseChatPointCommand(message);
+  if (!parsed.ok) return parsed;
+  const { names, quantity, action } = parsed.command;
 
   const supabase = await createClient();
   const { data: claimsData } = await supabase.auth.getClaims();
@@ -44,7 +59,7 @@ export async function awardPointsFromChat(rawMessage: string): Promise<ChatPoint
   const matchesByName = new Map<string, { id: string; full_name: string }[]>();
   for (const student of matchedStudents ?? []) matchesByName.set(student.full_name, [...(matchesByName.get(student.full_name) ?? []), student]);
   const missing = names.filter((name) => !matchesByName.has(name));
-  if (missing.length) return { ok: false, message: `${missing.join(', ')} 학생을 명단에서 찾지 못했습니다. 이름을 확인해 주세요.` };
+  if (missing.length) return { ok: false, message: `${missing.join(', ')} 이름이 등록 명단과 정확히 일치하지 않습니다. 이름은 자동 교정하거나 부분일치로 처리하지 않으니 명단의 이름을 그대로 입력해 주세요.` };
   const duplicates = names.filter((name) => (matchesByName.get(name)?.length ?? 0) > 1);
   if (duplicates.length) return { ok: false, message: `${duplicates.join(', ')} 학생은 동명이인이 있어 챗봇으로 처리할 수 없습니다. 명단의 버튼을 이용해 주세요.` };
 
