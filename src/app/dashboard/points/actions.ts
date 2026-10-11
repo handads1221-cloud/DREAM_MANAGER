@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'; import { createClient } from '@/lib/supabase/server';
 export type QuickPointResult = { ok: true; studentId: string; amount: number; message: string } | { ok: false; message: string };
+export type ChatPointResult = { ok: true; changes: { studentId: string; name: string; amount: number }[]; message: string } | { ok: false; message: string };
 export async function awardQuickPoint(formData: FormData): Promise<QuickPointResult> {
   const supabase = await createClient(); const { data } = await supabase.auth.getClaims(); const userId = data?.claims?.sub;
   if (!userId) return { ok: false, message: '로그인이 만료되었습니다.' };
@@ -14,4 +15,44 @@ export async function awardQuickPoint(formData: FormData): Promise<QuickPointRes
   revalidatePath('/dashboard/points'); revalidatePath('/dashboard');
   const quantity = Math.abs(amount);
   return { ok: true, studentId, amount, message: amount > 0 ? `보석 ${quantity}개를 추가했습니다.` : `보석 ${quantity}개를 차감했습니다.` };
+}
+
+export async function awardPointsFromChat(rawMessage: string): Promise<ChatPointResult> {
+  const message = rawMessage.trim().replace(/[()]/g, '').replace(/\s+/g, ' ');
+  if (!message || message.length > 500) return { ok: false, message: '명령은 500자 이내로 입력해 주세요.' };
+
+  const command = message.match(/^(.+?)\s+보석\s*(\d{1,3})\s*개?\s*(지급|추가|차감)$/);
+  if (!command) return { ok: false, message: '예: 김하늘 보석 2개 지급 또는 김하늘,이사랑 보석 1개 차감처럼 입력해 주세요.' };
+
+  const names = [...new Set(command[1].split(/[\s,，]+/).map((name) => name.trim()).filter(Boolean))];
+  const quantity = Number(command[2]);
+  const action = command[3] === '차감' ? '차감' : '지급';
+  if (!names.length || names.length > 50) return { ok: false, message: '한 번에 1명부터 50명까지 처리할 수 있습니다.' };
+  if (!Number.isInteger(quantity) || quantity < 1 || quantity > 999) return { ok: false, message: '보석 수량은 1개부터 999개까지 입력해 주세요.' };
+
+  const supabase = await createClient();
+  const { data: claimsData } = await supabase.auth.getClaims();
+  const userId = claimsData?.claims?.sub;
+  if (!userId) return { ok: false, message: '로그인이 만료되었습니다.' };
+
+  const { data: profile } = await supabase.from('profiles').select('role, is_active').eq('id', userId).maybeSingle();
+  if (!profile?.is_active || !['admin', 'teacher'].includes(profile.role)) return { ok: false, message: '보석을 변경할 권한이 없습니다.' };
+
+  const { data: matchedStudents, error: studentError } = await supabase.from('students').select('id, full_name').eq('is_active', true).in('full_name', names);
+  if (studentError) return { ok: false, message: `학생 명단을 확인하지 못했습니다. (${studentError.message})` };
+
+  const matchesByName = new Map<string, { id: string; full_name: string }[]>();
+  for (const student of matchedStudents ?? []) matchesByName.set(student.full_name, [...(matchesByName.get(student.full_name) ?? []), student]);
+  const missing = names.filter((name) => !matchesByName.has(name));
+  if (missing.length) return { ok: false, message: `${missing.join(', ')} 학생을 명단에서 찾지 못했습니다. 이름을 확인해 주세요.` };
+  const duplicates = names.filter((name) => (matchesByName.get(name)?.length ?? 0) > 1);
+  if (duplicates.length) return { ok: false, message: `${duplicates.join(', ')} 학생은 동명이인이 있어 챗봇으로 처리할 수 없습니다. 명단의 버튼을 이용해 주세요.` };
+
+  const amount = action === '차감' ? -quantity : quantity;
+  const students = names.map((name) => matchesByName.get(name)![0]);
+  const { error } = await supabase.from('point_transactions').insert(students.map((student) => ({ student_id: student.id, amount, reason: action === '차감' ? '보석 챗봇 차감' : '보석 챗봇 지급', awarded_by: userId })));
+  if (error) return { ok: false, message: `보석을 처리하지 못했습니다. (${error.message})` };
+
+  revalidatePath('/dashboard/points'); revalidatePath('/dashboard'); revalidatePath('/dashboard/points/statistics');
+  return { ok: true, changes: students.map((student) => ({ studentId: student.id, name: student.full_name, amount })), message: `${names.join(', ')} 학생에게 보석 ${quantity}개가 ${action}되었습니다.` };
 }
