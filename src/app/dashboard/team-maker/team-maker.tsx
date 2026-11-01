@@ -3,7 +3,8 @@
 import { useState } from 'react';
 
 type Attendee = { id: string; name: string; grade: number };
-type TeamCount = 2 | 4;
+type TeamCount = 2 | 3 | 4 | 5 | 6;
+const teamCountOptions: TeamCount[] = [2, 3, 4, 5, 6];
 
 function shuffled<T>(items: T[]) {
   const result = [...items];
@@ -35,22 +36,21 @@ function divideTeams(attendees: Attendee[], teamCount: TeamCount, randomize = fa
 
 export function TeamMaker({ attendees }: { attendees: Attendee[] }) {
   const [teamCount, setTeamCount] = useState<TeamCount>(2);
-  const [teams, setTeams] = useState(() => divideTeams(attendees, 2));
+  const [teams, setTeams] = useState<Attendee[][] | null>(null);
 
   const changeCount = (count: TeamCount) => {
     setTeamCount(count);
-    setTeams(divideTeams(attendees, count, true));
+    setTeams(null);
   };
 
   return <section className="team-maker">
     <div className="team-maker-toolbar">
       <div role="group" aria-label="팀 개수 선택">
-        <button className={teamCount === 2 ? 'active' : ''} type="button" onClick={() => changeCount(2)}>2팀</button>
-        <button className={teamCount === 4 ? 'active' : ''} type="button" onClick={() => changeCount(4)}>4팀</button>
+        {teamCountOptions.map((count) => <button key={count} className={teamCount === count ? 'active' : ''} type="button" onClick={() => changeCount(count)}>{count}팀</button>)}
       </div>
-      <button className="team-reshuffle" type="button" disabled={!attendees.length} onClick={() => setTeams(divideTeams(attendees, teamCount, true))}>다시 섞기</button>
+      <button className="team-reshuffle" type="button" disabled={!attendees.length} onClick={() => setTeams(divideTeams(attendees, teamCount, true))}>{teams ? '다시 나누기' : '팀 나누기'}</button>
     </div>
-    {!attendees.length ? <p className="team-maker-empty">오늘 등록된 출석 인원이 없습니다.</p> : <div className={`team-quadrants teams-${teamCount}`}>
+    {!attendees.length ? <p className="team-maker-empty">오늘 등록된 출석 인원이 없습니다.</p> : !teams ? <p className="team-maker-ready">팀 수를 선택하고 <strong>팀 나누기</strong> 버튼을 눌러주세요.</p> : <div className={`team-quadrants teams-${teamCount}`}>
       {teams.map((team, index) => <article key={index} className={`team-panel team-${index + 1}`}>
         <header><h2>{index + 1}팀</h2><span>{team.length}명</span></header>
         <div>{team.map((student) => <strong key={student.id}>{student.name}</strong>)}</div>
