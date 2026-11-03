@@ -24,7 +24,7 @@ export function QuizHost({ room: initialRoom, quiz, joinUrl, qrDataUrl }: { room
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [error, setError] = useState('');
   const question = quiz.questions[room.currentQuestionIndex] ?? null;
-  const displayedOptions = question ? arrangeQuizOptions(question.options, room.currentQuestionIndex) : [];
+  const displayedOptions = question ? arrangeQuizOptions(question.options, room.code, question.id) : [];
 
   const broadcast = useCallback(async (event: string) => {
     const channel = supabase.channel(`quiz:${room.code}`);

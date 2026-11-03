@@ -18,7 +18,7 @@ export function QuizPlayer({ code }: { code: string }) {
   const [submitting, setSubmitting] = useState(false);
   const [secondsLeft, setSecondsLeft] = useState(0);
   const [error, setError] = useState('');
-  const displayedOptions = live?.question ? arrangeQuizOptions(live.question.options, live.question_index) : [];
+  const displayedOptions = live?.question ? arrangeQuizOptions(live.question.options, code, live.question.id) : [];
 
   const refresh = useCallback(async (currentSession: Session) => {
     const { data, error: stateError } = await supabase.rpc('get_live_quiz_state', { requested_code: code, requested_participant: currentSession.participantId, requested_token: currentSession.token });
