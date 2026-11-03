@@ -711,6 +711,7 @@ button { color: inherit; }
 @media(max-width:760px){.birthday-celebration-workspace{grid-template-columns:1fr}.birthday-celebrants-preview{min-height:0}.birthday-celebrant-list{grid-template-columns:1fr}.birthday-celebration-launch{grid-template-columns:1fr}.birthday-celebration-launch button{grid-column:1;grid-row:auto;width:100%}.birthday-month-grid-selector{grid-template-columns:repeat(4,1fr)}}
 
 .birthday-display-content { z-index: 1; top: 50%; bottom: auto; aspect-ratio: 16 / 7; transform: translateY(-50%); isolation: isolate; }
+.birthday-display-toolbar .birthday-music-toggle.active { border-color: rgba(100,105,183,.3); background: rgba(116,112,197,.9); color: #fff; box-shadow: 0 5px 16px rgba(77,72,160,.18); }
 
 /* Birthday celebration: heart-shaped name panel and gently rising heart bubbles. */
 .birthday-display-content { top: 6vh; right: auto; left: 55%; width: min(70vw,1220px); aspect-ratio: 47 / 20; transform: translateX(-50%); }
