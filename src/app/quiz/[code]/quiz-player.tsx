@@ -28,7 +28,15 @@ export function QuizPlayer({ code }: { code: string }) {
   useEffect(() => {
     const raw = window.localStorage.getItem(`dream-quiz-${code}`);
     if (!raw) { router.replace(`/quiz?code=${code}`); return; }
-    const current = JSON.parse(raw) as Session;
+    let current: Session;
+    try {
+      current = JSON.parse(raw) as Session;
+      if (!current.participantId || !current.token || !current.name || !current.avatar) throw new Error('invalid quiz session');
+    } catch {
+      window.localStorage.removeItem(`dream-quiz-${code}`);
+      router.replace(`/quiz?code=${code}`);
+      return;
+    }
     const initialize = window.setTimeout(() => { setSession(current); void refresh(current); }, 0);
     const channel = supabase.channel(`quiz:${code}`).on('broadcast', { event: 'state' }, () => void refresh(current)).subscribe();
     const timer = window.setInterval(() => void refresh(current), 2500);

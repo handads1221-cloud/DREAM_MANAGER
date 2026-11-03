@@ -33,6 +33,16 @@ export function QuizJoin({ initialCode }: { initialCode: string }) {
     setMessage('');
     startTransition(async () => {
       try {
+        const { data: roomState, error: roomStateError } = await supabase.rpc('get_live_quiz_state', {
+          requested_code: code,
+          requested_participant: null,
+          requested_token: null,
+        });
+        if (roomStateError) throw roomStateError;
+        if (roomState?.state !== 'lobby') {
+          setMessage('이미 시작된 퀴즈입니다. 다음 퀴즈방이 열릴 때 참여해 주세요.');
+          return;
+        }
         const token = crypto.randomUUID();
         const { data, error } = await supabase.rpc('join_quiz_room', { requested_code: code, requested_name: name, requested_avatar: avatar, requested_token: token });
         if (error) throw error;

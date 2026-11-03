@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
@@ -23,6 +23,7 @@ export function QuizHost({ room: initialRoom, quiz, joinUrl, qrDataUrl }: { room
   const [autoRevealSeconds, setAutoRevealSeconds] = useState<number | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [error, setError] = useState('');
+  const roomChangePending = useRef(false);
   const question = quiz.questions[room.currentQuestionIndex] ?? null;
   const displayedOptions = question ? arrangeQuizOptions(question.options, room.code, question.id) : [];
 
@@ -57,17 +58,35 @@ export function QuizHost({ room: initialRoom, quiz, joinUrl, qrDataUrl }: { room
   }, [room.state, room.questionStartedAt, question]);
 
   async function updateRoom(state: 'question' | 'reveal' | 'finished', questionIndex: number | null, event: string) {
+    if (roomChangePending.current) return;
+    roomChangePending.current = true;
     setError('');
-    const { data, error: updateError } = await supabase.rpc('control_live_quiz_room', {
-      requested_room: room.id,
-      requested_token: room.controlToken,
-      requested_state: state,
-      requested_question_index: questionIndex,
-    });
-    if (updateError) { setError('진행 상태를 저장하지 못했습니다. 잠시 후 다시 눌러 주세요.'); return; }
-    const updated = data as RoomControlResult;
-    setRoom((current) => ({ ...current, state: updated.state, currentQuestionIndex: updated.current_question_index, questionStartedAt: updated.question_started_at }));
-    await broadcast(event);
+    try {
+      const { data, error: updateError } = await supabase.rpc('control_live_quiz_room', {
+        requested_room: room.id,
+        requested_token: room.controlToken,
+        requested_state: state,
+        requested_question_index: questionIndex,
+      });
+      if (updateError) { setError('진행 상태를 저장하지 못했습니다. 잠시 후 다시 눌러 주세요.'); return; }
+      const updated = data as RoomControlResult;
+      let questionStartedAt = updated.question_started_at;
+
+      if (state === 'question') {
+        questionStartedAt = new Date().toISOString();
+        const { error: startedAtError } = await supabase
+          .from('quiz_rooms')
+          .update({ question_started_at: questionStartedAt })
+          .eq('id', room.id)
+          .eq('host_control_token', room.controlToken);
+        if (startedAtError) { setError('문제 제한시간을 시작하지 못했습니다. 다시 눌러 주세요.'); return; }
+      }
+
+      setRoom((current) => ({ ...current, state: updated.state, currentQuestionIndex: updated.current_question_index, questionStartedAt }));
+      await broadcast(event);
+    } finally {
+      roomChangePending.current = false;
+    }
   }
   async function startQuestion(index: number) { await updateRoom('question', index, 'state'); }
   async function reveal() { if (room.state === 'question') await updateRoom('reveal', room.currentQuestionIndex, 'state'); }
@@ -98,11 +117,19 @@ export function QuizHost({ room: initialRoom, quiz, joinUrl, qrDataUrl }: { room
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [answerCount, participants.length, room.state, room.currentQuestionIndex]);
 
+  useEffect(() => {
+    if (room.state !== 'question' || !question || !room.questionStartedAt || secondsLeft !== 0) return;
+    const elapsed = Date.now() - new Date(room.questionStartedAt).getTime();
+    if (elapsed >= question.durationSeconds * 1000) void reveal();
+  // The room transition guard prevents duplicate reveal requests.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [secondsLeft, room.state, room.questionStartedAt, room.currentQuestionIndex, question]);
+
   return <main className="quiz-host-page">
     <header className="quiz-host-toolbar"><button type="button" onClick={() => router.push('/dashboard/quiz')}>← 퀴즈 목록</button><div><button type="button" onClick={toggleFullscreen}>{isFullscreen ? '전체화면 종료' : '전체화면'}</button><button type="button" onClick={() => window.open(joinUrl, '_blank')}>참여 화면</button></div></header>
     {error && <p className="quiz-error" role="alert">{error}</p>}
     {room.state === 'lobby' && <section className="quiz-lobby"><div className="quiz-lobby-copy"><small>게임 준비 완료!</small><h1>{quiz.title}</h1><p>{quiz.description || '스마트폰으로 QR을 찍고 퀴즈에 참여해 주세요!'}</p><div className="quiz-room-code"><span>참여 코드</span><strong>{room.code}</strong></div><b>{participants.length}명 참여 완료</b><button type="button" disabled={participants.length === 0} onClick={() => startQuestion(0)}>첫 문제 시작</button></div><div className="quiz-lobby-qr"><Image unoptimized src={qrDataUrl} alt={`${room.code} 퀴즈 참여 QR 코드`} width={420} height={420}/><span>{joinUrl}</span></div><div className="quiz-participant-cloud">{participants.map((participant) => <div key={participant.id}><span className="quiz-avatar" style={{ backgroundPosition: avatarPosition(participant.avatar_key) }}/><b>{participant.display_name}</b></div>)}</div></section>}
-    {room.state !== 'lobby' && room.state !== 'finished' && question && <section className="quiz-host-question"><header><span>문제 {room.currentQuestionIndex + 1} / {quiz.questions.length}</span><strong className={secondsLeft <= 5 && room.state === 'question' ? 'urgent' : ''}>{room.state === 'reveal' ? '정답 공개!' : secondsLeft}</strong><span>{answerCount} / {participants.length}명 답변</span></header>{autoRevealSeconds !== null && <p className="quiz-auto-reveal" role="status">모두 답변했어요! {autoRevealSeconds}초 후 정답 공개</p>}<h1>{question.prompt}</h1><div className="quiz-host-options">{displayedOptions.map((option, displayIndex) => <article className={room.state === 'reveal' && option.isCorrect ? 'correct' : ''} key={option.id}><span>{displayIndex + 1}</span><b>{option.label}</b>{room.state === 'reveal' && option.isCorrect && <em>정답</em>}</article>)}</div><footer>{room.state === 'question' ? <button type="button" onClick={reveal}>답변 마감 · 정답 공개</button> : <button type="button" onClick={next}>{room.currentQuestionIndex + 1 < quiz.questions.length ? '다음 문제' : '최종 순위 보기'}</button>}</footer></section>}
+    {room.state !== 'lobby' && room.state !== 'finished' && question && <section className="quiz-host-question"><header><span>문제 {room.currentQuestionIndex + 1} / {quiz.questions.length}</span><strong className={room.state === 'reveal' ? 'revealed' : secondsLeft <= 5 ? 'urgent' : ''}>{room.state === 'reveal' ? '정답 공개!' : secondsLeft}</strong><span>{answerCount} / {participants.length}명 답변</span></header>{autoRevealSeconds !== null && <p className="quiz-auto-reveal" role="status">모두 답변했어요! {autoRevealSeconds}초 후 정답 공개</p>}<h1>{question.prompt}</h1><div className="quiz-host-options">{displayedOptions.map((option, displayIndex) => <article className={room.state === 'reveal' && option.isCorrect ? 'correct' : ''} key={option.id}><span>{displayIndex + 1}</span><b>{option.label}</b>{room.state === 'reveal' && option.isCorrect && <em>정답</em>}</article>)}</div><footer>{room.state === 'question' ? <button type="button" onClick={reveal}>답변 마감 · 정답 공개</button> : <button type="button" onClick={next}>{room.currentQuestionIndex + 1 < quiz.questions.length ? '다음 문제' : '최종 순위 보기'}</button>}</footer></section>}
     {room.state === 'finished' && <section className="quiz-final"><small>최종 순위</small><h1>퀴즈왕을 축하해요!</h1><div>{participants.slice(0, 10).map((participant, index, ranked) => { const rank = new Set(ranked.slice(0, index).map((item) => item.score)).size + 1; return <article key={participant.id} className={rank <= 3 ? `rank-${rank}` : ''}><strong>{rank}</strong><span className="quiz-avatar" style={{ backgroundPosition: avatarPosition(participant.avatar_key) }}/><b>{participant.display_name}</b><em>{participant.score.toLocaleString()}점</em></article>; })}</div><button type="button" onClick={() => router.push('/dashboard/quiz')}>퀴즈 목록으로</button></section>}
   </main>;
 }
