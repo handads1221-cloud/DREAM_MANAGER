@@ -9,6 +9,7 @@ export type DrawResult =
 
 export type ExclusionResult = { ok: boolean; message: string };
 export type AttendanceExclusionResult = ExclusionResult & { excludedIds?: string[] };
+export type WinnerGemResult = { ok: boolean; message: string; amount?: number };
 
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -98,4 +99,23 @@ export async function drawRandomStudent(formData: FormData): Promise<DrawResult>
   if (!winner) return { ok: false, message: '추첨 결과를 불러오지 못했습니다.' };
   revalidatePath('/dashboard/random-draw');
   return { ok: true, winner: { id: winner.student_id, fullName: winner.full_name, grade: winner.grade }, message: `${winner.full_name} 학생이 당첨되었습니다!` };
+}
+
+export async function awardRandomDrawWinnerGems(studentId: string, quantity: number): Promise<WinnerGemResult> {
+  const context = await getAdminContext();
+  if (!context) return { ok: false, message: '관리자 로그인 상태를 확인해 주세요.' };
+  if (!uuidPattern.test(studentId)) return { ok: false, message: '당첨 학생을 확인하지 못했습니다.' };
+  if (!Number.isInteger(quantity) || quantity < 1 || quantity > 5) return { ok: false, message: '보석은 1개부터 5개까지 지급할 수 있습니다.' };
+
+  const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Seoul', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+  const [{ data: drawResult }, { data: student }] = await Promise.all([
+    context.supabase.from('random_draw_results').select('id').eq('student_id', studentId).eq('draw_date', today).eq('drawn_by', context.userId).limit(1).maybeSingle(),
+    context.supabase.from('students').select('full_name, is_active').eq('id', studentId).maybeSingle(),
+  ]);
+  if (!drawResult || !student?.is_active) return { ok: false, message: '오늘 추첨한 당첨 학생과 일치하지 않습니다. 다시 추첨해 주세요.' };
+
+  const { error } = await context.supabase.from('point_transactions').insert({ student_id: studentId, amount: quantity, reason: '랜덤 뽑기 당첨 보상', awarded_by: context.userId });
+  if (error) return { ok: false, message: `보석을 지급하지 못했습니다. (${error.message})` };
+  revalidatePath('/dashboard/points'); revalidatePath('/dashboard/points/statistics'); revalidatePath('/dashboard');
+  return { ok: true, amount: quantity, message: `${student.full_name} 학생에게 보석 ${quantity}개를 지급했습니다!` };
 }

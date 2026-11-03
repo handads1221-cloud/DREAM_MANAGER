@@ -2,7 +2,8 @@
 
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
-import { drawRandomStudent } from '../actions';
+import { GemIcon } from '@/components/app-icon';
+import { awardRandomDrawWinnerGems, drawRandomStudent } from '../actions';
 import type { DrawStudent } from '../random-draw-machine';
 
 export type DrawConfig = { grade: string; excludedStudentIds: string[]; preventDuplicate: boolean };
@@ -13,6 +14,9 @@ export function RandomDrawDisplay({ config, students, todayWinnerIds }: { config
   const [winner, setWinner] = useState<DrawStudent | null>(null);
   const [message, setMessage] = useState('낚싯대를 던져 오늘의 행운을 만나 보세요!');
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [gemAwardPending, setGemAwardPending] = useState(false);
+  const [awardedGemCount, setAwardedGemCount] = useState<number | null>(null);
+  const [gemAwardMessage, setGemAwardMessage] = useState('');
 
   useEffect(() => {
     function handleFullscreenChange() { setIsFullscreen(Boolean(document.fullscreenElement)); }
@@ -31,9 +35,11 @@ export function RandomDrawDisplay({ config, students, todayWinnerIds }: { config
   }
 
   async function startDraw() {
-    if (!config || phase === 'drawing') return;
+    if (!config || phase === 'drawing' || gemAwardPending) return;
     if (eligibleCount === 0) { setMessage('추첨 가능한 학생이 없습니다. 옵션 창에서 설정을 다시 선택해 주세요.'); return; }
     setWinner(null);
+    setAwardedGemCount(null);
+    setGemAwardMessage('');
     setMessage('낚싯대를 던졌어요… 누가 올라올까요?');
     setPhase('drawing');
     const formData = new FormData();
@@ -50,6 +56,15 @@ export function RandomDrawDisplay({ config, students, todayWinnerIds }: { config
     setPhase('winner');
   }
 
+  async function awardWinnerGems(quantity: number) {
+    if (!winner || gemAwardPending || awardedGemCount !== null) return;
+    setGemAwardPending(true);
+    const result = await awardRandomDrawWinnerGems(winner.id, quantity);
+    setGemAwardPending(false);
+    setGemAwardMessage(result.message);
+    if (result.ok) setAwardedGemCount(result.amount ?? quantity);
+  }
+
   if (!config) return <main className="random-draw-display-error"><span>🎣</span><h1>추첨 설정을 불러올 수 없어요</h1><p>랜덤 뽑기 옵션 화면에서 다시 새 창을 열어 주세요.</p><button type="button" onClick={() => window.close()}>창 닫기</button></main>;
 
   return <main className="random-draw-display-page"><section className={`random-fishing-stage random-draw-display-stage ${phase}`} aria-live="polite">
@@ -58,6 +73,7 @@ export function RandomDrawDisplay({ config, students, todayWinnerIds }: { config
     <div className="random-cast-line"><span/><i>🐟</i></div>
     <div className="random-winner-celebration" aria-hidden="true"><i>★</i><i>●</i><i>◆</i><i>★</i><i>●</i><i>◆</i><i>★</i><i>●</i><i>◆</i><i>★</i><i>●</i><i>◆</i></div>
     <div className="random-result-card">{winner ? <>{winner.photoUrl ? <Image src={winner.photoUrl} alt={`${winner.fullName} 학생 얼굴`} width={160} height={160}/> : <div className="random-name-only">{winner.fullName.slice(0, 1)}</div>}<small>{winner.grade}학년 행운의 주인공</small><strong className="random-winner-name">{winner.fullName}</strong></> : <><div className="random-fish-placeholder">🐟</div><small>오늘의 행운을 기다리는 중</small><strong>누가 잡힐까요?</strong></>}</div>
-    <div className="random-stage-action"><p>{message}</p><button type="button" onClick={startDraw} disabled={phase === 'drawing' || eligibleCount === 0}>{phase === 'drawing' ? '물고기를 끌어올리는 중…' : phase === 'winner' ? '한 번 더 낚기' : '낚싯대 던지기'}</button></div>
+    {winner && phase === 'winner' && <section className="random-winner-gem-awards" aria-label="당첨자 보석 지급"><p>{gemAwardMessage || `${winner.fullName} 학생에게 지급할 보석을 선택하세요`}</p><div>{[1,2,3,4,5].map((quantity) => <button type="button" key={quantity} className={awardedGemCount === quantity ? 'awarded' : ''} disabled={gemAwardPending || awardedGemCount !== null} onClick={() => awardWinnerGems(quantity)} aria-label={`${winner.fullName} 학생에게 보석 ${quantity}개 지급`}><GemIcon/><span>×{quantity}</span></button>)}</div></section>}
+    <div className="random-stage-action"><p>{message}</p><button type="button" onClick={startDraw} disabled={phase === 'drawing' || gemAwardPending || eligibleCount === 0}>{phase === 'drawing' ? '물고기를 끌어올리는 중…' : phase === 'winner' ? '한 번 더 낚기' : '낚싯대 던지기'}</button></div>
   </section></main>;
 }
