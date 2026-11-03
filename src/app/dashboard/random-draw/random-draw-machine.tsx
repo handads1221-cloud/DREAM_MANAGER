@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { clearRandomDrawExclusions, resetTodayRandomDrawWinners, setRandomDrawExclusion, useTodayAttendanceForRandomDraw } from './actions';
+import { clearRandomDrawExclusions, resetTodayRandomDrawWinners, setRandomDrawExclusion, useTodayAttendanceForRandomDraw as applyTodayAttendanceFilter } from './actions';
 
 export type DrawStudent = { id: string; fullName: string; grade: number; photoUrl: string | null };
 
@@ -41,7 +41,7 @@ export function RandomDrawMachine({ students, todayWinnerIds, initialExcludedIds
   async function applyTodayAttendance() {
     if (bulkPending) return;
     setBulkPending(true);
-    const result = await useTodayAttendanceForRandomDraw();
+    const result = await applyTodayAttendanceFilter();
     if (result.ok && result.excludedIds) setExcluded(new Set(result.excludedIds));
     setMessage(result.message);
     setBulkPending(false);
