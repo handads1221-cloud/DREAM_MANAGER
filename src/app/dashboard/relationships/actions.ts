@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
+import { birthDateFromFormData } from '@/lib/birth-date';
 
 function relationshipRedirect(kind: 'message' | 'error', message: string): never {
   redirect(`/dashboard/relationships?${kind}=${encodeURIComponent(message)}`);
@@ -112,10 +113,10 @@ export async function unassignTeacher(formData: FormData) {
 export async function updateTeacherBirthDate(formData: FormData) {
   const supabase = await adminClient(); if (!supabase) relationshipRedirect('error', '관리자 권한이 필요합니다.');
   const teacherId = String(formData.get('teacher_id') ?? '');
-  const birthDate = String(formData.get('birth_date') ?? '').trim() || null;
-  const today = new Date().toISOString().slice(0, 10);
+  let birthDate: string | null;
+  try { birthDate = birthDateFromFormData(formData); }
+  catch (error) { relationshipRedirect('error', error instanceof Error ? error.message : '생년월일을 확인해 주세요.'); }
   if (!teacherId) relationshipRedirect('error', '선생님 계정을 확인해 주세요.');
-  if (birthDate && (birthDate < '1900-01-01' || birthDate > today)) relationshipRedirect('error', '생년월일을 올바르게 입력해 주세요.');
   const { data: teacherRole } = await supabase.from('user_roles').select('role').eq('user_id', teacherId).eq('role', 'teacher').maybeSingle();
   if (!teacherRole) relationshipRedirect('error', '선생님 권한 계정을 찾을 수 없습니다.');
   const { data: teacher, error } = await supabase.from('profiles').update({ birth_date: birthDate }).eq('id', teacherId).select('full_name').single();

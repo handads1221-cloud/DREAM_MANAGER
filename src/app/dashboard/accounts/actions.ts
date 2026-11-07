@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
+import { birthDateFromFormData } from '@/lib/birth-date';
 
 const allowedRoles = new Set(['parent', 'student', 'teacher', 'accountant', 'admin']);
 
@@ -110,10 +111,11 @@ export async function updateTeacherPhoto(formData: FormData) {
 export async function updateTeacherBirthDate(formData: FormData) {
   const admin = await requireAdmin(); if (!admin) accountsRedirect('error', '관리자 권한을 확인할 수 없습니다.');
   const userId = String(formData.get('user_id') ?? '');
-  const birthDate = String(formData.get('birth_date') ?? '').trim() || null;
+  let birthDate: string | null;
+  try { birthDate = birthDateFromFormData(formData); }
+  catch (error) { accountsRedirect('error', error instanceof Error ? error.message : '생년월일을 확인해 주세요.'); }
   const { data: teacherRole } = await admin.supabase.from('user_roles').select('role').eq('user_id', userId).eq('role', 'teacher').maybeSingle();
   if (!teacherRole) accountsRedirect('error', '선생님 권한이 있는 계정만 생년월일을 등록할 수 있습니다.');
-  if (birthDate && (birthDate < '1900-01-01' || birthDate > new Date().toISOString().slice(0, 10))) accountsRedirect('error', '생년월일을 올바르게 입력해 주세요.');
   const { data: teacher, error } = await admin.supabase.from('profiles').update({ birth_date: birthDate }).eq('id', userId).select('full_name').single();
   if (error) accountsRedirect('error', `생년월일을 저장하지 못했습니다. (${error.message})`);
   revalidatePath('/dashboard/accounts'); revalidatePath('/dashboard');
