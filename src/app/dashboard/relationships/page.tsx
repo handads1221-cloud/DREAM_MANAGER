@@ -14,7 +14,7 @@ export default async function RelationshipsPage({ searchParams }: PageProps<'/da
   if (!profile || profile.role !== 'admin' || !profile.is_active) redirect('/dashboard');
   const [{ data: students }, { data: accounts }, { data: roles }, { data: guardians }, { data: assignments }] = await Promise.all([
     supabase.from('students').select('id, full_name, grade, class_name, profile_id, photo_path').eq('is_active', true).order('grade').order('full_name'),
-    supabase.from('profiles').select('id, full_name, email, phone, photo_path').eq('is_active', true).order('full_name'),
+    supabase.from('profiles').select('id, full_name, email, phone, birth_date, photo_path').eq('is_active', true).order('full_name'),
     supabase.from('user_roles').select('user_id, role').in('role', ['student', 'parent', 'teacher']),
     supabase.from('student_guardians').select('student_id, parent_id, relationship'),
     supabase.from('teacher_assignments').select('teacher_id, grade, class_name').eq('school_year', new Date().getFullYear()),
@@ -28,7 +28,7 @@ export default async function RelationshipsPage({ searchParams }: PageProps<'/da
   const studentRows = (students ?? []).map((student) => ({ ...student, photo_url: student.photo_path ? photoUrlByPath.get(student.photo_path) ?? null : null, guardians: guardianByStudent.get(student.id) ?? [] }));
   const roleIds = (role: string) => new Set((roles ?? []).filter((item) => item.role === role).map((item) => item.user_id));
   const studentIds = roleIds('student'); const parentIds = roleIds('parent'); const teacherIds = roleIds('teacher');
-  const mapAccount = (account: NonNullable<typeof accounts>[number]) => ({ id: account.id, full_name: account.full_name, email: account.email, phone: account.phone, photo_url: account.photo_path ? photoUrlByPath.get(account.photo_path) ?? null : null });
+  const mapAccount = (account: NonNullable<typeof accounts>[number]) => ({ id: account.id, full_name: account.full_name, email: account.email, phone: account.phone, birth_date: account.birth_date, photo_url: account.photo_path ? photoUrlByPath.get(account.photo_path) ?? null : null });
   const studentAccounts = (accounts ?? []).filter((account) => studentIds.has(account.id)).map(mapAccount);
   const parents = (accounts ?? []).filter((account) => parentIds.has(account.id)).map(mapAccount);
   const assignmentsByTeacher = new Map<string, { grade: number; class_name: string }[]>();

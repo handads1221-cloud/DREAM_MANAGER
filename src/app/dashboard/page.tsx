@@ -14,8 +14,8 @@ const roleCopy: Record<AppRole, { eyebrow: string; title: string; description: s
   accountant: { eyebrow: 'FINANCE HOME', title: '드림어린이부 재정을 투명하게', description: '수입·지출 장부와 결제요청 처리 현황을 관리합니다.' },
 };
 
-function BirthdayCard({ month, title, people }: { month: number; title: string; people: { name: string; role: string; date: string }[] }) {
-  return <article className="birthday-card"><div><p className="eyebrow">{month}월</p><h2>{title}</h2><b>{people.length}명</b></div><div className="birthday-list">{people.map((person) => <span key={`${person.role}-${person.name}-${person.date}`}><i>{person.role}</i><strong>{person.name}</strong><small>{Number(person.date.slice(5,7))}월 {Number(person.date.slice(8,10))}일</small></span>)}{people.length === 0 && <p>등록된 생일자가 없습니다.</p>}</div></article>;
+function BirthdayCard({ month, title, people }: { month: number; title: string; people: { id: string; name: string; role: string; date: string; grade: number | null }[] }) {
+  return <article className="birthday-card"><div><p className="eyebrow">{month}월</p><h2>{title}</h2><b>{people.length}명</b></div><div className="birthday-list">{people.map((person) => <span key={`${person.role}-${person.id}`}><i>{person.role === '학생' && person.grade ? `${person.grade}학년` : person.role}</i><strong>{person.name}</strong><small>{Number(person.date.slice(5,7))}월 {Number(person.date.slice(8,10))}일</small></span>)}{people.length === 0 && <p>등록된 생일자가 없습니다.</p>}</div></article>;
 }
 
 function AttendanceChart({ weeks }: { weeks: { date: string; count: number; current: boolean }[] }) {
@@ -54,7 +54,7 @@ export default async function DashboardPage({ searchParams }: PageProps<'/dashbo
   const assignedRoles = (assignedRoleRows ?? []).map((row) => row.role as AppRole);
   const copy = roleCopy[role];
   let stats: { label: string; value: string; href: string; tone: string; detail?: string }[];
-  let adminOverview: null | { weeks: { date: string; count: number; current: boolean }[]; upcomingPlans: { id: string; schedule_date: string; schedule_time: string | null; title: string }[]; previousMonth: number; currentMonth: number; previousBirthdays: { name: string; role: string; date: string }[]; currentBirthdays: { name: string; role: string; date: string }[]; consecutiveAbsences: { name: string; grade: number }[] } = null;
+  let adminOverview: null | { weeks: { date: string; count: number; current: boolean }[]; upcomingPlans: { id: string; schedule_date: string; schedule_time: string | null; title: string }[]; previousMonth: number; currentMonth: number; previousBirthdays: { id: string; name: string; role: string; date: string; grade: number | null }[]; currentBirthdays: { id: string; name: string; role: string; date: string; grade: number | null }[]; consecutiveAbsences: { name: string; grade: number }[] } = null;
   let studentHighlights: null | { gems: number; attendance: number } = null;
   let studentPhotoUrl: string | null = null;
   let parentUpcomingPlans: { id: string; schedule_date: string; schedule_time: string | null; title: string }[] | null = null;
@@ -82,7 +82,7 @@ export default async function DashboardPage({ searchParams }: PageProps<'/dashbo
     const teacherIds = (teacherRoles ?? []).map((item) => item.user_id);
     const [{ data: attendanceRows }, { data: teacherBirthdays }] = await Promise.all([
       eventIds.length ? supabase.from('attendance_records').select('event_id,student_id').in('event_id', eventIds).in('status', ['present','late']) : Promise.resolve({ data: [] }),
-      teacherIds.length ? supabase.from('profiles').select('full_name, birth_date').in('id', teacherIds).eq('is_active', true).not('birth_date', 'is', null) : Promise.resolve({ data: [] }),
+      teacherIds.length ? supabase.from('profiles').select('id, full_name, birth_date').in('id', teacherIds).eq('is_active', true).not('birth_date', 'is', null) : Promise.resolve({ data: [] }),
     ]);
     const eventDates = new Map((events ?? []).filter((event) => !event.is_statistics_excluded).map((event) => [event.id, event.service_date]));
     const attendanceByDate = new Map<string, number>();
@@ -98,7 +98,7 @@ export default async function DashboardPage({ searchParams }: PageProps<'/dashbo
       }
     }
     const weeks = sundayDates.map((date, index) => ({ date, count: attendanceByDate.get(date) ?? 0, current: index === sundayDates.length - 1 }));
-    const people = [...(activeStudents ?? []).filter((item) => item.birth_date).map((item) => ({ name: item.full_name, role: '학생', date: item.birth_date! })), ...(teacherBirthdays ?? []).map((item) => ({ name: item.full_name, role: '선생님', date: item.birth_date! }))];
+    const people = [...(activeStudents ?? []).filter((item) => item.birth_date).map((item) => ({ id: item.id, name: item.full_name, role: '학생', date: item.birth_date!, grade: item.grade })), ...(teacherBirthdays ?? []).map((item) => ({ id: item.id, name: item.full_name, role: '선생님', date: item.birth_date!, grade: null }))];
     const inMonth = (month: number) => people.filter((person) => Number(person.date.slice(5, 7)) === month).sort((a, b) => a.date.slice(5).localeCompare(b.date.slice(5)));
     const recentThreeSundays = sundayDates.slice(-3);
     const consecutiveAbsences = (activeStudents ?? []).filter((student) => recentThreeSundays.every((date) => !attendedDatesByStudent.get(student.id)?.has(date))).map((student) => ({ name: student.full_name, grade: student.grade }));

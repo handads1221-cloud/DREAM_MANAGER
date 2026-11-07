@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { BirthdayCelebrationDisplay } from './birthday-celebration-display';
 import type { BirthdayPerson } from '../birthday-celebration-manager';
 
-type SharedBirthday = { person_id: string; full_name: string; person_type: 'student' | 'teacher'; month_day: string };
+type SharedBirthday = { person_id: string; full_name: string; person_type: 'student' | 'teacher'; month_day: string; grade?: number | null };
 
 export default async function BirthdayCelebrationDisplayPage({ searchParams }: PageProps<'/dashboard/birthday-celebration/display'>) {
   const params = await searchParams;
@@ -13,12 +13,14 @@ export default async function BirthdayCelebrationDisplayPage({ searchParams }: P
   const supabase = await createClient();
   const { data: claimsData } = await supabase.auth.getClaims();
   if (!claimsData?.claims?.sub) redirect('/login');
-  const [{ data: profile }, { data: birthdays }] = await Promise.all([
+  const [{ data: profile }, { data: birthdays }, { data: studentGrades }] = await Promise.all([
     supabase.from('profiles').select('role, is_active').eq('id', claimsData.claims.sub).maybeSingle(),
     supabase.rpc('get_shared_birthdays'),
+    supabase.from('students').select('id,grade').eq('is_active', true),
   ]);
   if (!profile?.is_active || profile.role !== 'admin') redirect('/dashboard');
-  const people: BirthdayPerson[] = ((birthdays ?? []) as SharedBirthday[]).filter((person) => months.includes(Number(person.month_day.slice(0, 2)))).sort((a, b) => a.month_day.localeCompare(b.month_day) || a.full_name.localeCompare(b.full_name, 'ko')).map((person) => ({ id: person.person_id, fullName: person.full_name, personType: person.person_type, monthDay: person.month_day }));
+  const gradeByStudent = new Map((studentGrades ?? []).map((student) => [student.id, student.grade]));
+  const people: BirthdayPerson[] = ((birthdays ?? []) as SharedBirthday[]).filter((person) => months.includes(Number(person.month_day.slice(0, 2)))).sort((a, b) => a.month_day.localeCompare(b.month_day) || a.full_name.localeCompare(b.full_name, 'ko')).map((person) => ({ id: person.person_id, fullName: person.full_name, personType: person.person_type, monthDay: person.month_day, grade: person.person_type === 'student' ? person.grade ?? gradeByStudent.get(person.person_id) ?? null : null }));
   if (!people.length) redirect('/dashboard/birthday-celebration');
   return <BirthdayCelebrationDisplay people={people} months={months}/>;
 }

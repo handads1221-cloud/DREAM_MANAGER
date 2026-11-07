@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 
-export type BirthdayPerson = { id: string; fullName: string; personType: 'student' | 'teacher'; monthDay: string };
+export type BirthdayPerson = { id: string; fullName: string; personType: 'student' | 'teacher'; monthDay: string; grade: number | null };
 
 export function BirthdayCelebrationManager({ people, currentMonth }: { people: BirthdayPerson[]; currentMonth: number }) {
   const [months, setMonths] = useState<Set<number>>(() => new Set([currentMonth]));
@@ -25,7 +25,7 @@ export function BirthdayCelebrationManager({ people, currentMonth }: { people: B
 
   return <div className="birthday-celebration-workspace">
     <section className="birthday-month-selector"><div><b>축하할 월 선택</b><span>여러 달을 함께 선택할 수 있습니다.</span></div><div className="birthday-month-grid-selector">{Array.from({ length: 12 }, (_, index) => index + 1).map((month) => <button type="button" key={month} className={months.has(month) ? 'active' : ''} onClick={() => toggleMonth(month)}><strong>{month}월</strong><small>{counts[month] ?? 0}명</small></button>)}</div></section>
-    <section className="birthday-celebrants-preview"><header><div><p>SELECTED CELEBRANTS</p><h2>생일축하자 명단</h2></div><strong>{selected.length}<small>명</small></strong></header><div className="birthday-celebrant-list">{selected.map((person) => <article key={`${person.personType}-${person.id}`}><time>{Number(person.monthDay.slice(0, 2))}월 {Number(person.monthDay.slice(3, 5))}일</time><b>{person.fullName}</b><span>{person.personType === 'teacher' ? '선생님' : '학생'}</span></article>)}{selected.length === 0 && <p>선택한 월에 등록된 생일자가 없습니다.</p>}</div></section>
+    <section className="birthday-celebrants-preview"><header><div><p>SELECTED CELEBRANTS</p><h2>생일축하자 명단</h2></div><strong>{selected.length}<small>명</small></strong></header><div className="birthday-celebrant-list">{selected.map((person) => <article key={`${person.personType}-${person.id}`}><time>{Number(person.monthDay.slice(0, 2))}월 {Number(person.monthDay.slice(3, 5))}일</time><b>{person.fullName}</b><span>{person.personType === 'teacher' ? '선생님' : person.grade ? `${person.grade}학년` : '학생'}</span></article>)}{selected.length === 0 && <p>선택한 월에 등록된 생일자가 없습니다.</p>}</div></section>
     <section className="birthday-celebration-launch"><div><b>선택한 모든 생일자를 함께 축하합니다.</b><span>새 창이 열리면 전체화면 버튼을 눌러 주세요.</span></div><button type="button" onClick={openCelebration} disabled={!selected.length}>축하 화면 띄우기 <span aria-hidden="true">↗</span></button><small role="status">{message}</small></section>
   </div>;
 }

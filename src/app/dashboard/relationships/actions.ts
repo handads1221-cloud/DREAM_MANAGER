@@ -109,6 +109,24 @@ export async function unassignTeacher(formData: FormData) {
   relationshipRedirect('message', `${teacher?.full_name ?? '선생님'}의 ${grade}학년 ${className} 담당 배정을 취소했습니다.`);
 }
 
+export async function updateTeacherBirthDate(formData: FormData) {
+  const supabase = await adminClient(); if (!supabase) relationshipRedirect('error', '관리자 권한이 필요합니다.');
+  const teacherId = String(formData.get('teacher_id') ?? '');
+  const birthDate = String(formData.get('birth_date') ?? '').trim() || null;
+  const today = new Date().toISOString().slice(0, 10);
+  if (!teacherId) relationshipRedirect('error', '선생님 계정을 확인해 주세요.');
+  if (birthDate && (birthDate < '1900-01-01' || birthDate > today)) relationshipRedirect('error', '생년월일을 올바르게 입력해 주세요.');
+  const { data: teacherRole } = await supabase.from('user_roles').select('role').eq('user_id', teacherId).eq('role', 'teacher').maybeSingle();
+  if (!teacherRole) relationshipRedirect('error', '선생님 권한 계정을 찾을 수 없습니다.');
+  const { data: teacher, error } = await supabase.from('profiles').update({ birth_date: birthDate }).eq('id', teacherId).select('full_name').single();
+  if (error) relationshipRedirect('error', `생년월일을 저장하지 못했습니다. (${error.message})`);
+  revalidatePath('/dashboard/relationships');
+  revalidatePath('/dashboard');
+  revalidatePath('/dashboard/plans');
+  revalidatePath('/dashboard/birthday-celebration');
+  relationshipRedirect('message', birthDate ? `${teacher.full_name} 선생님의 생년월일을 저장했습니다.` : `${teacher.full_name} 선생님의 생년월일을 삭제했습니다.`);
+}
+
 export async function updateParentProfile(formData: FormData) {
   const supabase = await adminClient(); if (!supabase) relationshipRedirect('error', '관리자 권한이 필요합니다.');
   const parentId = String(formData.get('parent_id') ?? '');

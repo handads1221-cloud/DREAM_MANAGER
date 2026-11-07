@@ -4,7 +4,7 @@ import { DashboardShell, type AppRole } from '../dashboard-shell';
 import { PlansCalendar, type Plan } from './plans-calendar';
 import { getKoreanHolidays } from '@/lib/korean-holidays';
 
-type SharedBirthday = { person_id:string; full_name:string; person_type:'student'|'teacher'; month_day:string };
+type SharedBirthday = { person_id:string; full_name:string; person_type:'student'|'teacher'; month_day:string; grade?:number|null };
 
 export default async function PlansPage({ searchParams }: PageProps<'/dashboard/plans'>) {
   const params=await searchParams; const supabase=await createClient(); const {data}=await supabase.auth.getClaims(); if(!data?.claims?.sub) redirect('/login');
@@ -22,7 +22,7 @@ export default async function PlansPage({ searchParams }: PageProps<'/dashboard/
   const today=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Seoul'}).format(new Date());
   const currentYear=Number(today.slice(0,4)); const years=Array.from({length:7},(_,index)=>currentYear-2+index);
   const birthdayPlans:Plan[]=years.flatMap(year=>[
-    ...((birthdays??[]) as SharedBirthday[]).map(person=>({id:`birthday-${person.person_type}-${person.person_id}-${year}`,schedule_date:`${year}-${person.month_day}`,schedule_time:null,title:`🎂 ${person.full_name} ${person.person_type==='teacher'?'선생님':'학생'} 생일`,details:`${person.full_name} ${person.person_type==='teacher'?'선생님':'학생'}의 생일입니다.`,created_at:'',updated_at:'',creator_name:'자동 등록',kind:'birthday' as const,editable:false})),
+    ...((birthdays??[]) as SharedBirthday[]).map(person=>{const label=person.person_type==='teacher'?'선생님':person.grade?`${person.grade}학년`:'학생';return {id:`birthday-${person.person_type}-${person.person_id}-${year}`,schedule_date:`${year}-${person.month_day}`,schedule_time:null,title:`🎂 ${person.full_name} ${label} 생일`,details:`${person.full_name} ${label}의 생일입니다.`,created_at:'',updated_at:'',creator_name:'자동 등록',kind:'birthday' as const,editable:false};}),
   ]);
   const holidayPlans:Plan[]=years.flatMap(year=>getKoreanHolidays(year).map((day,index)=>({id:`holiday-${year}-${index}-${day.date}`,schedule_date:day.date,schedule_time:null,title:`🇰🇷 ${day.name}`,details:'대한민국 국가 공휴일입니다.',created_at:'',updated_at:'',creator_name:'공휴일 자동 등록',kind:'holiday' as const,editable:false})));
   const plans=[...manualPlans,...birthdayPlans,...holidayPlans].sort((a,b)=>a.schedule_date.localeCompare(b.schedule_date));
