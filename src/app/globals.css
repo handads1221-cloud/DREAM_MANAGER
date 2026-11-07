@@ -713,6 +713,7 @@ button { color: inherit; }
 
 .birthday-display-content { z-index: 1; top: 50%; bottom: auto; aspect-ratio: 16 / 7; transform: translateY(-50%); isolation: isolate; }
 .birthday-display-toolbar .birthday-music-toggle.active { border-color: rgba(100,105,183,.3); background: rgba(116,112,197,.9); color: #fff; box-shadow: 0 5px 16px rgba(77,72,160,.18); }
+.birthday-display-toolbar { top:auto; bottom:18px; }
 
 /* Birthday celebration: heart-shaped name panel and gently rising heart bubbles. */
 .birthday-display-content { top: 6vh; right: auto; left: 55%; width: min(70vw,1220px); aspect-ratio: 47 / 20; transform: translateX(-50%); }
