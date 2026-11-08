@@ -714,6 +714,21 @@ button { color: inherit; }
 .birthday-display-content { z-index: 1; top: 50%; bottom: auto; aspect-ratio: 16 / 7; transform: translateY(-50%); isolation: isolate; }
 .birthday-display-toolbar .birthday-music-toggle.active { border-color: rgba(100,105,183,.3); background: rgba(116,112,197,.9); color: #fff; box-shadow: 0 5px 16px rgba(77,72,160,.18); }
 .birthday-display-toolbar { top:auto; bottom:18px; }
+.birthday-display-names span { align-items:center; flex-direction:column; gap:2px; }
+.birthday-display-names b { max-width:100%; overflow:visible; text-overflow:clip; white-space:nowrap; }
+.birthday-display-content.medium .birthday-display-copy>p { font-size:clamp(18px,1.8vw,31px); }
+.birthday-display-content.medium .birthday-display-copy>h1 { margin-bottom:12px; font-size:clamp(11px,.95vw,17px); }
+.birthday-display-names.medium { gap:5px 7px; }
+.birthday-display-names.medium span { padding:6px 4px; }
+.birthday-display-names.medium b { font-size:clamp(15px,1.35vw,23px); }
+.birthday-display-names.medium small { font-size:clamp(7px,.55vw,9px); }
+.birthday-display-content.many .birthday-display-copy { width:84%; max-height:82%; }
+.birthday-display-content.many .birthday-display-copy>p { font-size:clamp(16px,1.55vw,27px); }
+.birthday-display-content.many .birthday-display-copy>h1 { margin-bottom:8px; font-size:clamp(10px,.8vw,14px); }
+.birthday-display-names.many { gap:3px 5px; }
+.birthday-display-names.many span { padding:4px 2px; }
+.birthday-display-names.many b { font-size:clamp(12px,1.05vw,18px); }
+.birthday-display-names.many small { font-size:clamp(6px,.48vw,8px); }
 
 /* Birthday celebration: heart-shaped name panel and gently rising heart bubbles. */
 .birthday-display-content { top: 6vh; right: auto; left: 55%; width: min(70vw,1220px); aspect-ratio: 47 / 20; transform: translateX(-50%); }
